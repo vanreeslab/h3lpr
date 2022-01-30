@@ -1,85 +1,24 @@
-#ifndef SRC_CORE_MACRO_HPP_
-#define SRC_CORE_MACRO_HPP_
+#ifndef C3PO_SRC_MACROS_HPP_
+#define C3PO_SRC_MACROS_HPP_
 
 #include <execinfo.h>
 #include <mpi.h>
 #include <omp.h>
-#include <p8est.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
 
-#include "core/types.hpp"
-#include "hdf5.h"
-
-#ifndef MPI_NONASYNC
-#define M_MPI_AGGRESSIVE
-#endif
-
-// register the current git commit for tracking purpose
-#ifdef GIT_COMMIT
-#define M_GIT_COMMIT GIT_COMMIT
-#else
-#define M_GIT_COMMIT "?"
-#endif
-
-// check if the compilation defines the order of the wavelet. if not, we do it
-#ifndef WAVELET_N
-#define M_WAVELET_N 2
-#else
-#define M_WAVELET_N WAVELET_N
-#endif
-
-#ifndef WAVELET_NT
-#define M_WAVELET_NT 0
-#else
-#define M_WAVELET_NT WAVELET_NT
-#endif
-
 /**
  * @name user-defined parameters 
  * @{
  */
-#define M_N 24          //!< size of one block (M_N x M_N x M_N), must be EVEN
 #define M_ALIGNMENT 16  //!< memory alignement (in Byte, 16 = 2 doubles = 4 floats)
-
-#ifndef BLOCK_GS
-#define M_GS 4  //!< memory space for the ghost points (not the actual number of ghost points!)
-#else
-#define M_GS BLOCK_GS
-#endif
 /** @} */
-
-// /**
-//  * @name memory sizes shortcuts
-//  * @{
-//  */
-#define M_NCENTER (M_N / 2)        //!< center ID of a block
-#define M_NHALF (M_N / 2)          //!< number of points in a half block
-#define M_STRIDE (2 * M_GS + M_N)  //!< stride in memory
-
-// // #ifndef BLOCK_GS
-// // static constexpr bidx_t m_gs = 4;
-// // #else
-// // static constexpr bidx_t m_gs = BLOCK_GS;
-// // #endif
-
-// // static constexpr bidx_t m_stride_reg = (2 * m_gs + M_N);
-// // static constexpr bidx_t m_stride_ext = ((m_stride_reg * sizeof(real_t)) % M_ALIGNMENT == 0) ?
-// // static constexpr bidx_t m_stride[3] = {() % (M_ALIGNMENT / sizeof(real_t))}
-// /** @} */
 
 
 #define M_INLINE __attribute__((always_inline)) inline
-
-/**
- * @name memory management
- * @{
- */
-#define M_MPI_REAL MPI_DOUBLE          //!< type used for the MPI communication (double by default)
-#define M_HDF5_REAL H5T_NATIVE_DOUBLE  //!< type used for the MPI communication (double by default)
 
 /**
  * @brief returns true if the memory is aligned
@@ -179,133 +118,18 @@
         (m_sign_zero_ < m_sign_a_) - (m_sign_a_ < m_sign_zero_); \
     })
 
-#define m_fequal(a, b)                                                                 \
-    ({                                                                                 \
-        real_t m_equal_a_ = (a);                                                       \
-        real_t m_equal_b_ = (b);                                                       \
-        (std::fabs(m_equal_a_ - m_equal_b_) < std::numeric_limits<real_t>::epsilon()); \
-    })
-
-/** @} */
-
-/**
- * @name Block related operations
- * 
- */
-/**
- * @brief returns the position of a point (i0,i1,i2) wrt to the computational domain
- * 
- * @param i0 the index in the x direction within a block
- * @param i1 the index in the y direction within a block
- * @param i2 the index in the z direction within a block
- * @param hgrid the local grid spacing
- * @param xyz the position of the origin of the block (!= the position of (0,0,0))
- * 
- */
-#define m_pos(pos, i0, i1, i2, hgrid, xyz)      \
-    ({                                          \
-        __typeof__(i0) m_pos_i0_ = (i0);        \
-        __typeof__(i1) m_pos_i1_ = (i1);        \
-        __typeof__(i2) m_pos_i2_ = (i2);        \
-                                                \
-        pos[0] = m_pos_i0_ * hgrid[0] + xyz[0]; \
-        pos[1] = m_pos_i1_ * hgrid[1] + xyz[1]; \
-        pos[2] = m_pos_i2_ * hgrid[2] + xyz[2]; \
-    })
-
-/**
- * @brief returns the position of a point (i0,i1,i2) wrt ot the origin of the block
- * 
- * @param i0 the index in the x direction within a block
- * @param i1 the index in the y direction within a block
- * @param i2 the index in the z direction within a block
- * @param hgrid the local grid spacing
- * @param xyz the position of the left corner of the block
- * 
- */
-#define m_pos_relative(offset, i0, i1, i2, hgrid)  \
-    ({                                             \
-        __typeof__(i0) m_pos_relative_i0_ = (i0);  \
-        __typeof__(i1) m_pos_relative_i1_ = (i1);  \
-        __typeof__(i2) m_pos_relative_i2_ = (i2);  \
-                                                   \
-        offset[0] = m_pos_relative_i0_ * hgrid[0]; \
-        offset[1] = m_pos_relative_i1_ * hgrid[1]; \
-        offset[2] = m_pos_relative_i2_ * hgrid[2]; \
-    })
-
-// /**
-//  * @brief returns the size (in elements) of one block
-//  *
-//  */
-// #define m_blockmemsize(lda)                                             \
-//     ({                                                                  \
-//         __typeof__(lda) m_blockmemsize_lda_ = (lda);                    \
-//         (bidx_t)(m_blockmemsize_lda_ * M_STRIDE * M_STRIDE * M_STRIDE); \
-//     })
-
-/**
- * @brief returns the memory offset of the first block element: (0,0,0)
- * 
- */
-#define m_zeroidx(ida, mem)                                                                                                              \
-    ({                                                                                                                                   \
-        __typeof__(mem) m_zeroidx_mem_ = (mem);                                                                                          \
-        lda_t           m_zeroidx_ida_ = (lda_t)(ida);                                                                                   \
-        bidx_t          m_zeroidx_gs_  = (bidx_t)(m_zeroidx_mem_->gs());                                                                 \
-        bidx_t          m_zeroidx_str_ = (bidx_t)(m_zeroidx_mem_->stride());                                                             \
-        (bidx_t)(m_zeroidx_gs_ + m_zeroidx_str_ * (m_zeroidx_gs_ + m_zeroidx_str_ * (m_zeroidx_gs_ + m_zeroidx_str_ * m_zeroidx_ida_))); \
-    })
-
-/**
- * @brief returns the memory offset to reach a 3D position (i0,i1,i2) given a stride (str).
- * 
- * The ghost point position is not taken into account here as we already have the (0,0,0) position with GridBlock::data().
- * 
- * @note: we cast the stride to size_t to ensure a proper conversion while computing the adress
- */
-// #define m_sidx(i0, i1, i2, ida, str)                                                                                \
-//     ({                                                                                                              \
-//         lid_t  m_sidx_i0_  = (lid_t)(i0);                                                                           \
-//         lid_t  m_sidx_i1_  = (lid_t)(i1);                                                                           \
-//         lid_t  m_sidx_i2_  = (lid_t)(i2);                                                                           \
-//         lda_t  m_sidx_ida_ = (lda_t)(ida);                                                                          \
-//         size_t m_sidx_str_ = (size_t)(str);                                                                         \
-//         (size_t)(m_sidx_i0_ + m_sidx_str_ * (m_sidx_i1_ + m_sidx_str_ * (m_sidx_i2_ + m_sidx_str_ * m_sidx_ida_))); \
-//     })
-
-/**
- * @brief returns the memory offset to reach a 3D position (i0,i1,i2) given a @ref MemLayout
- * 
- * This macro is equivalent to @ref m_sidx with a stride given by MemLayout::stride()
- * The ghost point position is not taken into account here as we already have the (0,0,0) position with GridBlock::data().
- * 
- */
-// #define m_midx(i0, i1, i2, ida, mem)                    \
-//     ({                                                  \
-//         __typeof__(mem) m_midx_mem_ = (mem);            \
-//         m_sidx(i0, i1, i2, ida, m_midx_mem_->stride()); \
-//     })
-
-/**
- * @brief returns the memory offset to reach a 3D position (i0,i1,i2) given a @ref MemLayout
- * 
- * The ghost point position is not taken into account here as we already have the (0,0,0) position with GridBlock::data().
- * 
- */
-// #define m_idx(i0, i1, i2)                \
-//     ({                                   \
-//         m_sidx(i0, i1, i2, 0, M_STRIDE); \
-//     })
-
 /** @} */
 
 /**
  * @name logs and verbosity 
  * 
  */
+namespace C3PO {
 extern short m_log_level_counter;
 extern char  m_log_level_prefix[32];
+};
+using C3PO::m_log_level_counter;
+using C3PO::m_log_level_prefix;
 
 #define m_log_level_plus                                  \
     ({                                                    \
@@ -325,6 +149,7 @@ extern char  m_log_level_prefix[32];
             strcat(m_log_level_prefix, "  ");             \
         }                                                 \
     })
+
 /**
  * @brief m_log will be displayed as a log, either by every rank or only by the master (given LOG_ALLRANKS)
  * 
@@ -418,4 +243,4 @@ extern char  m_log_level_prefix[32];
 #endif
 /** @} */
 
-#endif  // SRC_CORE_MACRO_HPP_
+#endif  // C3PO_SRC_MACROS_HPP_

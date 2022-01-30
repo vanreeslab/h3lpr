@@ -1,9 +1,11 @@
-#ifndef SRC_PROF_HPP_
-#define SRC_PROF_HPP_
+#ifndef C3PO_SRC_PROF_HPP_
+#define C3PO_SRC_PROF_HPP_
+
 // c headers
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 // cpp headers
 #include <cmath>
 #include <iostream>
@@ -11,13 +13,15 @@
 #include <map>
 #include <string>
 
-#include "core/macros.hpp"
-#include "core/types.hpp"
+#include "macros.hpp"
+#include "types.hpp"
+
+namespace C3PO {
 
 class TimerBlock {
    protected:
     // bool        is_root_  = true;      //!< indicate if the block is root
-    iter_t       count_    = 0;         //!< the number of times this block has been called
+    iter_t      count_    = 0;         //!< the number of times this block has been called
     size_t      memsize_  = 0;         //!< the memory size associated with a memory operation
     real_t      t0_       = -1.0;      //!< temp start time of the block
     real_t      t1_       = -1.0;      //!< temp stop time of the block
@@ -41,7 +45,7 @@ class TimerBlock {
     TimerBlock* AddChild(std::string child_name) noexcept;
 
     void SetParent(TimerBlock* parent);
-    void Disp(FILE* file, const level_t level, const real_t totalTime, const lda_t icol) const;
+    void Disp(FILE* file, const level_t level, const real_t totalTime, const int icol) const;
 };
 
 /**
@@ -72,9 +76,11 @@ class Prof {
     void Disp() const;
 };
 
+}; // namespace C3PO
+
 #define m_profInit(prof, name)                              \
     ({                                                      \
-        Prof*       m_profInit_prof_ = (Prof*)(prof);       \
+        C3PO::Prof* m_profInit_prof_ = (C3PO::Prof*)(prof); \
         std::string m_profInit_name_ = (std::string)(name); \
         if ((m_profInit_prof_) != nullptr) {                \
             (m_profInit_prof_)->Init(m_profInit_name_);     \
@@ -83,7 +89,7 @@ class Prof {
 
 #define m_profLeave(prof, name)                              \
     ({                                                       \
-        Prof*       m_profLeave_prof_ = (Prof*)(prof);       \
+        C3PO::Prof* m_profLeave_prof_ = (C3PO::Prof*)(prof); \
         std::string m_profLeave_name_ = (std::string)(name); \
         if ((m_profLeave_prof_) != nullptr) {                \
             (m_profLeave_prof_)->Leave(m_profLeave_name_);   \
@@ -92,7 +98,7 @@ class Prof {
 
 #define m_profInitLeave(prof, name)                                \
     ({                                                             \
-        Prof*       m_profInitLeave_prof_ = (Prof*)(prof);         \
+        C3PO::Prof* m_profInitLeave_prof_ = (C3PO::Prof*)(prof);   \
         std::string m_profInitLeave_name_ = (std::string)(name);   \
         if ((m_profInitLeave_prof_) != nullptr) {                  \
             (m_profInitLeave_prof_)->Init(m_profInitLeave_name_);  \
@@ -102,16 +108,17 @@ class Prof {
 
 #define m_profStart(prof, name)                              \
     ({                                                       \
-        Prof*       m_profStart_prof_ = (Prof*)(prof);       \
+        C3PO::Prof* m_profStart_prof_ = (C3PO::Prof*)(prof); \
         std::string m_profStart_name_ = (std::string)(name); \
         if ((m_profStart_prof_) != nullptr) {                \
             (m_profStart_prof_)->Init(m_profStart_name_);    \
             (m_profStart_prof_)->Start(m_profStart_name_);   \
         }                                                    \
     })
+
 #define m_profStop(prof, name)                              \
     ({                                                      \
-        Prof*       m_profStop_prof_ = (Prof*)(prof);       \
+        C3PO::Prof* m_profStop_prof_ = (C3PO::Prof*)(prof); \
         std::string m_profStop_name_ = (std::string)(name); \
         if ((m_profStop_prof_) != nullptr) {                \
             (m_profStop_prof_)->Stop(m_profStop_name_);     \

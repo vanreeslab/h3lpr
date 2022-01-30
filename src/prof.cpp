@@ -5,6 +5,8 @@
 using std::map;
 using std::string;
 
+namespace C3PO {
+
 static constexpr rank_t    upper_rank = 1000; // approximates the infinity of procs
 static map<rank_t, real_t> t_nu       = {{0, 0.0},
                                    {1, 6.314},
@@ -143,7 +145,7 @@ real_t TimerBlock::time_acc() const {
  * @param level 
  * @param total_time 
  */
-void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, const lda_t icol) const {
+void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, const int icol) const {
     // check if any proc has called the agent
     int total_count = 0;
     MPI_Allreduce(&count_, &total_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -409,3 +411,5 @@ void Prof::Disp() const {
     }
     MPI_Barrier(MPI_COMM_WORLD);
 }
+
+}; // namespace C3PO
