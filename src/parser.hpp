@@ -8,39 +8,49 @@
 //  Created by Wim van Rees on 8/25/16.
 //  Copyright © 2016 Wim van Rees. All rights reserved.
 
-#include <ctype.h>
-
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <sstream>
-#include <algorithm>
 #include <set>
+#include <sstream>
 
 #include "macros.hpp"
 
 namespace C3PO {
 
-
 // ==== helper methods : convert string to type (and specializations for string and bool) ===== //
+
+/**
+ * @brief converts the input string to the chosen type
+ */
 template <typename T>
 inline T convertStrToType(const std::string &s) {
     std::stringstream convert(s);
 
     T value;
-    if(!(convert >> value)) {
+    if (!(convert >> value)) {
         m_assert(false, "argument value for type is invalid : <%s>", s.c_str());
     }
     return value;
 }
 
+/**
+ * @brief converts a string to a boolean based on 'true' and 'false'
+ * 
+ * @tparam  
+ * @param s 
+ * @return true 
+ * @return false 
+ */
 template <>
 inline bool convertStrToType(const std::string &s) {
     std::stringstream convert(s);
 
     bool value;
-    if(!(convert >> std::boolalpha >> value)) {
+    if (!(convert >> std::boolalpha >> value)) {
         m_assert(false, "argument value for bool type is invalid : <%s>. Use true/false only.", s.c_str());
     }
     return value;
@@ -69,58 +79,58 @@ inline std::string convertTypeToStr(const std::string &t) {
 
 /**
  * @brief Holds arg/val pairs and provides an interface to access them.
- * 
+ *
  */
 class Parser {
-   protected:
-    std::map<std::string, std::string> arguments_map;
-    std::set<std::string> flags_set;
-    bool                               verbose      = false;
-    bool                               saveDefaults = false;
+    bool verbose      = false;
+    bool saveDefaults = false;
 
-    FILE *getFileHandle() const {
-        const std::string filepath = "argumentparser.log";
-        FILE *            f        = fopen(filepath.c_str(), "a");
-        if (f == nullptr) {
-            printf("Can not open file %s.\n", filepath.data());
-            return nullptr;
-        }
-        return f;
-    }
+    std::set<std::string>              flags_set_     = std::set<std::string>::empty();
+    std::map<std::string, std::string> arguments_map_ = std::map<std::string, std::string>::empty();
+    std::map<std::string, std::string> doc_map_       = std::map<std::string, std::string>::empty();
+
+    FILE *getFileHandle() const;
 
     /** @brief governs the input of values during parsing */
-    void add_arg_(const std::string& arg_string) {
-        if (arg_string.length() < 2 || arg_string[0] != '-' || arg_string[1] != '-') {
+
+    /**
+     * @brief Reads the arg_string and add the pair <flag , value> to arguments_map
+     * 
+     * @param arg_string the flag to read
+     */
+    void AddArg(const std::string &arg_string) {
+        // verify that it is an admissible flag : starts with "--" and has at least one 
+        if (arg_string.length() <= 2 || arg_string[0] != '-' || arg_string[1] != '-') {
             m_assert(false, "found an unexpected command-line entry : <%s>", arg_string.c_str());
         }
 
-        // check if this arg contains an '=' : 
-        size_t equals_pos = arg_string.find('=');
+        // check if this arg contains an '=' :
+        const size_t equals_pos = arg_string.find('=');
 
+        // if we found an equal sign, this is key-value pair
         if (equals_pos != std::string::npos) {
-            // this is a key-value pair
             std::string key_string = arg_string.substr(0, equals_pos);
             std::string val_string = arg_string.substr(equals_pos + 1);
+            // verify that there is not duplicate in the command line argument, fail if it is the case
             if (arguments_map.find(key_string) != arguments_map.end()) {
                 m_assert(false, "found a duplicate command line argument : <%s>", key_string.c_str());
             }
             arguments_map[key_string] = val_string;
+            doc_map_[key_string] = "not used in the present testcase";
         } else {
-            // this is a flag
+            // this is a flag, simply insert the flag
             flags_set.insert(arg_string);
         }
     }
 
     /** @brief governs the output of a values after parsing */
     template <typename T>
-    T parse_(const std::string &argkey, const bool strict, const T defval = T()) const {
+    T Parse(const std::string &argkey, const std::string& doc, const bool strict, const T defval = T()) const {
         T value;
 
         auto it = arguments_map.find(argkey);
         if (it == arguments_map.end()) {
-            if (verbose) {
-                m_log("parser argument %s is empty\n", argkey.data());
-            }
+                m_verb("parser argument %s is empty\n", argkey.data());
 
             if (strict) {
                 m_assert(false, "Mandatory command line option is not given. Argument name: <%s>", argkey.c_str());
@@ -133,7 +143,8 @@ class Parser {
                     fclose(f);
                 }
             }
-
+            doc_map_[argkey] = doc;
+            arguments_map[argkey] = ConvTypeToStr<T>(defval);
             value = defval;
 
         } else {
@@ -148,31 +159,30 @@ class Parser {
     }
 
    public:
-
-    bool HasValue(const std::string arg) const {
+    bool HasValue(const std::string& arg) const {
         return arguments_map.find(arg) != arguments_map.end();
     }
 
     template <typename T>
-    T GetValue(const std::string arg) const {
-        return parse_<T>(arg, true);
+    T GetValue(const std::string& arg, const std::string& doc) const {
+        return parse_<T>(arg,doc, true);
     }
 
     template <typename T>
-    T GetValue(const std::string arg, const T defval) const {
-        return parse_<T>(arg, false, defval);
+    T GetValue(const std::string& arg, const std::string& doc, const T defval) const {
+        return parse_<T>(arg,doc, false, defval);
     }
 
-    bool Flag(const std::string arg) {
+    bool GetFlag(const std::string arg, const std::string& doc) {
         return flags_set.count(arg) != 0;
     }
 
-    void set_verbosity(const bool verbosity) {
-        verbose = verbosity;
-    }
+    // void SetVerbosity(const bool verbosity) {
+    //     verbose_ = verbosity;
+    // }
 
-    void save_defaults() {
-        saveDefaults = true;
+    void SaveDefaults() {
+        saveDefaults_ = true;
     }
 
     void print_options() const {
@@ -199,14 +209,13 @@ class Parser {
 
 class ArgumentParser : public Parser {
    private:
-    const int    parse_argc;
-    char **parse_argv;
+    const int parse_argc;
+    char    **parse_argv;
 
    public:
     ArgumentParser(const int argc, char **argv) : parse_argc(argc), parse_argv(argv) {
-
         for (int i = 1; i < argc; i++) {
-            std::string arg_string(argv[i]); 
+            std::string arg_string(argv[i]);
             add_arg_(arg_string);
         }
 
@@ -224,9 +233,9 @@ class ArgumentParser : public Parser {
 
 /**
  * @brief Parses a string containing arg/val pairs.
- * 
+ *
  * Example usage:
- * 
+ *
  *     std::string testString = "--arg1=val1 --arg2=val2 --arg3=val3";
  *     StringParser parser(testString);
  *     std::cout << "arg1 = " << parser("--arg1").asString() << std::endl;
@@ -254,7 +263,7 @@ class StringParser : public Parser {
 
    public:
     StringParser(std::string &input) {
-        std::string arg_string;
+        std::string        arg_string;
         std::istringstream iss(input);
         while (iss >> arg_string) {
             add_arg_(arg_string);
@@ -264,7 +273,7 @@ class StringParser : public Parser {
 
 /**
  * @brief Parses a config file. See doc/parser.md for the format.
- * 
+ *
  */
 class ConfigParser : public Parser {
    protected:
@@ -313,6 +322,6 @@ class ConfigParser : public Parser {
     }
 };
 
-}; // namespace C3PO
+};  // namespace C3PO
 
 #endif
