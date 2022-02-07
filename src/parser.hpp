@@ -78,87 +78,74 @@ inline std::string convertTypeToStr(const std::string &t) {
 }
 
 /**
- * @brief Holds arg/val pairs and provides an interface to access them.
+ * @brief The Parser reads and holds arg/val pairs and provides an interface to access them.
  *
  */
 class Parser {
-    bool verbose      = false;
-    bool saveDefaults = false;
-
-    std::set<std::string>              flags_set_     = std::set<std::string>::empty();
-    std::map<std::string, std::string> arguments_map_ = std::map<std::string, std::string>::empty();
-    std::map<std::string, std::string> doc_map_       = std::map<std::string, std::string>::empty();
-
-    FILE *getFileHandle() const;
-
-    /** @brief governs the input of values during parsing */
+   private:
+    std::set<std::string>              flags_set_    = std::set<std::string>::empty();
+    std::map<std::string, std::string> arg_map_      = std::map<std::string, std::string>::empty();
+    std::map<std::string, std::string> doc_arg_map_  = std::map<std::string, std::string>::empty();
+    std::map<std::string, std::string> doc_flag_map_ = std::map<std::string, std::string>::empty();
 
     /**
      * @brief Reads the arg_string and add the pair <flag , value> to arguments_map
      * 
      * @param arg_string the flag to read
      */
-    void AddArg(const std::string &arg_string) {
-        // verify that it is an admissible flag : starts with "--" and has at least one 
-        if (arg_string.length() <= 2 || arg_string[0] != '-' || arg_string[1] != '-') {
-            m_assert(false, "found an unexpected command-line entry : <%s>", arg_string.c_str());
-        }
+    void AddArg_(const std::string &arg_string) ;
 
-        // check if this arg contains an '=' :
-        const size_t equals_pos = arg_string.find('=');
-
-        // if we found an equal sign, this is key-value pair
-        if (equals_pos != std::string::npos) {
-            std::string key_string = arg_string.substr(0, equals_pos);
-            std::string val_string = arg_string.substr(equals_pos + 1);
-            // verify that there is not duplicate in the command line argument, fail if it is the case
-            if (arguments_map.find(key_string) != arguments_map.end()) {
-                m_assert(false, "found a duplicate command line argument : <%s>", key_string.c_str());
-            }
-            arguments_map[key_string] = val_string;
-            doc_map_[key_string] = "not used in the present testcase";
-        } else {
-            // this is a flag, simply insert the flag
-            flags_set.insert(arg_string);
-        }
-    }
-
-    /** @brief governs the output of a values after parsing */
+    /**
+     * @brief returns the value corresponding to the requested key
+     * 
+     * @tparam T 
+     * @param argkey the key to look for
+     * @param doc the documentation that will be registered to this key
+     * @param strict if true, the call fails if no key is found
+     * @param defval the default value that has to be used if no key is found and strict is false
+     * @return T the value corresponding to the argkey
+     */
     template <typename T>
-    T Parse(const std::string &argkey, const std::string& doc, const bool strict, const T defval = T()) const {
-        T value;
-
+    T GetValue(const std::string &argkey, const std::string &doc, const bool strict, const T defval = T()) const {
+        //----------------------------------------------------------------------
         auto it = arguments_map.find(argkey);
-        if (it == arguments_map.end()) {
-                m_verb("parser argument %s is empty\n", argkey.data());
+        // if the key is found, simply register the doc and return the value
+        if (arguments_map.find(argkey) != arguments_map.end()) {
+            m_verb("Found the value for key %s as %s\n", argkey.data(), it->second.data());
 
-            if (strict) {
-                m_assert(false, "Mandatory command line option is not given. Argument name: <%s>", argkey.c_str());
-            }
+            // register the documentation to overwrite the one by default
+            doc_arg_map_[argkey] = doc;
 
-            if (saveDefaults) {
-                FILE *f = getFileHandle();
-                if (f != nullptr) {
-                    fprintf(f, "%s %s ", argkey.data(), convertTypeToStr(defval).data());
-                    fclose(f);
-                }
-            }
-            doc_map_[argkey] = doc;
-            arguments_map[argkey] = ConvTypeToStr<T>(defval);
-            value = defval;
-
+            // return the conversion of the string to the type
+            return convertStrToType<T>(it->second);
         } else {
-            if (verbose) {
-                m_log("Found the value for key %s as %s\n", argkey.data(), it->second.data());
-            }
+            // no key is found, if the search was strict, fail
+            m_assert(!strict, "Mandatory command line option is not given. Argument name: <%s>", argkey.c_str());
 
-            value = convertStrToType<T>(it->second);
+            // register the documentation, store the corresponding default value
+            doc_map_[argkey]      = doc;
+            arguments_map[argkey] = ConvTypeToStr<T>(defval);
+            // return the stored default value
+            return defval;
         }
-
-        return value;
+        //----------------------------------------------------------------------
     }
 
    public:
+
+    /**
+     * @brief Parse a typical command line
+     */
+    Parser(const int argc, char **argv) {
+        // start to parse the commande line, argc = 0 is the name of the executable so skip it
+        for (int i = 1; i < argc; i++) {
+            std::string arg_string(argv[i]);
+            AddArg_(arg_string);
+        }
+
+        m_verb("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flags_set_.size(), argc);
+    }
+
     bool HasValue(const std::string& arg) const {
         return arguments_map.find(arg) != arguments_map.end();
     }
@@ -175,14 +162,6 @@ class Parser {
 
     bool GetFlag(const std::string arg, const std::string& doc) {
         return flags_set.count(arg) != 0;
-    }
-
-    // void SetVerbosity(const bool verbosity) {
-    //     verbose_ = verbosity;
-    // }
-
-    void SaveDefaults() {
-        saveDefaults_ = true;
     }
 
     void print_options() const {
@@ -207,29 +186,30 @@ class Parser {
     }
 };
 
-class ArgumentParser : public Parser {
-   private:
-    const int parse_argc;
-    char    **parse_argv;
+// class ArgumentParser : public Parser {
+//    private:
+//     const int    parse_argc = 0;
+//     const char **parse_argv = nullptr;
 
-   public:
-    ArgumentParser(const int argc, char **argv) : parse_argc(argc), parse_argv(argv) {
-        for (int i = 1; i < argc; i++) {
-            std::string arg_string(argv[i]);
-            add_arg_(arg_string);
-        }
+//    public:
+//     ArgumentParser(const int argc, char **argv) : parse_argc(argc), parse_argv(argv) {
+//         // start to parse the commande line, argc=0 is the name of the 
+//         for (int i = 1; i < argc; i++) {
+//             std::string arg_string(argv[i]);
+//             AddArg_(arg_string);
+//         }
 
-        if (verbose) m_log("found %ld arguments and %ld flags out of %d\n", arguments_map.size(), flags_set.size(), argc);
-    }
+//         if (verbose) m_log("found %ld arguments and %ld flags out of %d\n", arguments_map.size(), flags_set.size(), argc);
+//     }
 
-    int getargc() const {
-        return parse_argc;
-    }
+//     int getargc() const {
+//         return parse_argc;
+//     }
 
-    char **getargv() const {
-        return parse_argv;
-    }
-};
+//     char **getargv() const {
+//         return parse_argv;
+//     }
+// };
 
 /**
  * @brief Parses a string containing arg/val pairs.
