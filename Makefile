@@ -4,6 +4,7 @@
 # - automatic vars: https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
 # - file names: https://www.gnu.org/software/make/manual/html_node/File-Name-Functions.html
 #------------------------------------------------------------------------------
+include makefun.mak
 
 ################################################################################
 # ARCH DEPENDENT VARIABLES
@@ -33,11 +34,13 @@ OBJ_DIR := build
 #-------------------------------------------------------------------------------
 # the sources/headers are listed without the folder, vpath will find them
 SRC := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(dir)/*.cpp)))
-HEAD := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(dir)/*.hpp)))
+# HEAD := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(dir)/*.hpp)))
+HEAD := $(foreach dir,$(SRC_DIR),$(wildcard $(dir)/*.hpp))
 
 # find the test sources, mandatory all in the same folder!
 TSRC := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(TEST_DIR)/$(dir)/*.cpp)))
-THEAD := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(TEST_DIR)/$(dir)/*.hpp)))
+# THEAD := $(foreach dir,$(SRC_DIR),$(notdir $(wildcard $(TEST_DIR)/$(dir)/*.hpp)))
+THEAD := $(foreach dir,$(SRC_DIR),$(wildcard $(TEST_DIR)/$(dir)/*.hpp))
 
 ## generate object list
 OBJ := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
@@ -73,7 +76,7 @@ M_FLAGS := -std=c++17 -fPIC -DGIT_COMMIT=\"$(GIT_COMMIT)\"
 
 #-------------------------------------------------------------------------------
 # compile + dependence + json file
-$(OBJ_DIR)/%.o : %.cpp $(HEAD)
+$(OBJ_DIR)/%.o : %.cpp
 ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang"), 1)
 	$(CXX) $(CXXFLAGS) $(OPTS) $(INC) $(DEF) $(M_FLAGS) -MMD -MF $(OBJ_DIR)/$*.d -MJ $(OBJ_DIR)/$*.o.json -c $< -o $@
 else
@@ -81,13 +84,13 @@ else
 endif
 
 # json only
-$(OBJ_DIR)/%.o.json :  %.cpp $(HEAD)
+$(OBJ_DIR)/%.o.json :  %.cpp
 	$(CXX) $(CXXFLAGS) $(OPTS) $(INC) $(DEF) $(M_FLAGS) -MJ $@ -E $< -o $(OBJ_DIR)/$*.ii
 
 #-------------------------------------------------------------------------------
 # tests
 # compile + dependence + json
-$(TEST_DIR)/$(OBJ_DIR)/%.o : %.cpp $(HEAD) $(THEAD)
+$(TEST_DIR)/$(OBJ_DIR)/%.o : %.cpp
 ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang"), 1)
 	$(CXX) $(CXXFLAGS) $(OPTS) $(TINC) $(INC) -I$(GTEST_INC) $(DEF) $(M_FLAGS) -MMD -MF $(OBJ_DIR)/$*.d -MJ $(OBJ_DIR)/$*.o.json -c $< -o $@
 else
@@ -95,24 +98,31 @@ else
 endif
 
 # json only
-$(TEST_DIR)/$(OBJ_DIR)/%.o.json : %.cpp $(HEAD) $(THEAD)
+$(TEST_DIR)/$(OBJ_DIR)/%.o.json : %.cpp
 	$(CXX) $(CXXFLAGS) $(OPTS) $(TINC) $(INC) -I$(GTEST_INC) $(DEF) $(M_FLAGS) -MJ $@ -E $< -o $(TEST_DIR)/$(OBJ_DIR)/$*.ii
 
 # clang-tidy files, define the MPI_INC which is only for this target
-$(OBJ_DIR)/%.tidy : %.cpp $(HEAD)
+$(OBJ_DIR)/%.tidy : %.cpp
 	clang-tidy $< --format-style=.clang-format --checks=all*
 
 ################################################################################
 .PHONY: default
-default: $(TARGET)
+default: lib_dynamic lib_static
 
 .PHONY: all
-all: $(TARGET) compdb
+all: lib_dynamic lib_static compdb
 
 #-------------------------------------------------------------------------------
+lib_dynamic: $(TARGET).so
+
+lib_static: $(TARGET).a
+
 # the main target
-$(TARGET): $(OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LIB) -o $@
+$(TARGET).so: $(OBJ)
+	$(CXX) -shared $(LDFLAGS) $^ $(LIB) -o $@
+
+$(TARGET).a: $(OBJ)
+	ar rvs $@ $^
 
 #-------------------------------------------------------------------------------
 # clang stuffs
@@ -131,49 +141,54 @@ compdb_full: $(CDB) $(TCDB)
 
 #-------------------------------------------------------------------------------
 .PHONY: test 
-test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ))
+test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
 	$(CXX) $(LDFLAGS) $^ -o $(TARGET)_$@ $(LIB) -L$(GTEST_LIB) $(GTEST_LIBNAME) -Wl,-rpath,$(GTEST_LIB)
 
 #-------------------------------------------------------------------------------
-#clean
-.PHONY: clean 
-clean:
-	@rm -rf $(OBJ_DIR)/*
-	@rm -rf $(OBJ_DIR)/*
-	@rm -rf $(TEST_DIR)/$(OBJ_DIR)/*.o
-	@rm -rf $(TARGET)
-	@rm -rf $(TARGET)_test
+install: info lib_dynamic lib_static
+	@mkdir -p $(PREFIX)/lib
+	@mkdir -p $(PREFIX)/include
+	$(call copy_list,$(HEAD),$(PREFIX)/include)
+	$(call copy_list,$(TARGET).a,$(PREFIX)/lib)
+	$(call copy_list,$(TARGET).so,$(PREFIX)/lib)
 
+
+#-------------------------------------------------------------------------------
+#clean
+.PHONY: clean
+clean:
+	@rm -rf $(TARGET).so
+	@rm -rf $(TARGET).a
+	@rm -rf $(TARGET)_test
+	@rm -rf $(OBJ_DIR)/*
+	@rm -rf $(PREFIX)/lib/*
+	@rm -rf $(PREFIX)/include/*
+	@rm -rf $(TEST_DIR)/$(OBJ_DIR)/*.o
+	
 #-------------------------------------------------------------------------------
 .PHONY: logo info
 info: logo
-	$(info prefix = $(PREFIX)/lib )
+	$(info install dir = $(PREFIX)/lib and $(PREFIX)/include )
 	$(info compiler = $(shell $(CXX) --version))
 	$(info compil. options = $(OPTS))
 	$(info compil. flags = $(CXXFLAGS) $(OPTS) $(INC) $(DEF) -fPIC -MMD)
 	$(info linker flags = -shared $(LDFLAGS))
 	$(info using arch file = $(ARCH_FILE) )
-	$(info LGF path = $(LGF_PATH) )
-	$(info ------------)
-	$(info FFTW:)
-	$(info - include: -I$(FFTW_INC) )
-	$(info - lib: -L$(FFTW_LIB) $(FFTW_LIBNAME) -Wl,-rpath,$(FFTW_LIB))
-	$(info ------------)
-	$(info HDF5:)
-	$(info - include: -I$(HDF5_INC) )
-	$(info - lib: -L$(HDF5_LIB) $(HDF5_LIBNAME) -Wl,-rpath,$(HDF5_LIB))
-	$(info ------------)
-	$(info LIST OF OBJECTS:)
+	$(info ---------------------------------)
+	$(info SOURCES)
 	$(info - SRC  = $(SRC))
 	$(info - HEAD = $(HEAD))
+	$(info - HEAD = $(call to_list,$(HEAD)))
 	$(info - OBJ  = $(OBJ))
 	$(info - DEP  = $(DEP))
+	$(info ---------------------------------)
+	$(info TESTING:)
 	$(info - TEST_DIR = $(TEST_DIR))
 	$(info - TEST_DIR = $(TEST_DIR)/$(OBJ_DIR))
 	$(info - test SRC = $(TSRC))
 	$(info - test OBJ = $(TOBJ))
 	$(info - test DEP = $(TDEP))
-	$(info ------------)
+	$(info ---------------------------------)
 
 .NOTPARALLEL: logo
 

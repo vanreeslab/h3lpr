@@ -118,6 +118,7 @@ class Parser {
         return ParseFlag_(arg,doc);
     }
 
+
    protected:
     void ReadArgString_(const std::string &arg_string);
     bool ParseFlag_(const std::string &flagkey, const std::string &doc);
