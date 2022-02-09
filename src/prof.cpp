@@ -7,8 +7,8 @@ using std::string;
 
 namespace C3PO {
 
-static constexpr rank_t    upper_rank = 1000; // approximates the infinity of procs
-static map<rank_t, real_t> t_nu       = {{0, 0.0},
+static constexpr int    upper_rank = 1000; // approximates the infinity of procs
+static map<int, double> t_nu       = {{0, 0.0},
                                    {1, 6.314},
                                    {2, 2.920},
                                    {3, 2.353},
@@ -26,9 +26,9 @@ static map<rank_t, real_t> t_nu       = {{0, 0.0},
  * @brief return the t_nu for 90% confidence interval width based on the interpolation of the above table
  * 
  * @param nu the number of proc-1
- * @return real_t the confidence interval param
+ * @return double the confidence interval param
  */
-real_t t_nu_interp(const rank_t nu) {
+double t_nu_interp(const int nu) {
     m_assert(nu >= 0, "the nu param = %d must be positive", nu);
     //-------------------------------------------------------------------------
     if (nu == 0) {
@@ -44,11 +44,11 @@ real_t t_nu_interp(const rank_t nu) {
     } else {
         // find the right point
         auto         it_up  = t_nu.lower_bound(nu);  // first element >= nu
-        const rank_t nu_up  = it_up->first;
-        const real_t t_up   = it_up->second;
+        const int nu_up  = it_up->first;
+        const double t_up   = it_up->second;
         auto         it_low = std::prev(it_up,1);  // take the previous one
-        const rank_t nu_low = it_low->first;
-        const real_t t_low  = it_low->second;
+        const int nu_low = it_low->first;
+        const double t_low  = it_low->second;
         // m_log("nu_up = %d, nu_low = %d, t_up=%f, t_low=%f",nu_up,nu_low,t_up, t_low);
         return t_low + (t_up-t_low)/(nu_up-nu_low)*(nu-nu_low);
     }
@@ -87,7 +87,7 @@ void TimerBlock::Stop() {
     // get the time
     t1_ = MPI_Wtime();
     // store it
-    real_t dt = t1_ - t0_;
+    double dt = t1_ - t0_;
     time_acc_ = time_acc_ + dt;
     // reset to negative for the checks
     t0_ = -1.0;
@@ -123,13 +123,13 @@ void TimerBlock::SetParent(TimerBlock* parent) {
  * 
  * If the timer is a ghost timer (never called but still created), we return the sum on the children
  * 
- * @return real_t 
+ * @return double 
  */
-real_t TimerBlock::time_acc() const {
+double TimerBlock::time_acc() const {
     if (count_ > 0) {
         return time_acc_;
     } else {
-        real_t sum = 0.0;
+        double sum = 0.0;
         for (auto it = children_.cbegin(); it != children_.cend(); ++it) {
             const TimerBlock* child = it->second;
             sum += child->time_acc();
@@ -145,7 +145,7 @@ real_t TimerBlock::time_acc() const {
  * @param level 
  * @param total_time 
  */
-void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, const int icol) const {
+void TimerBlock::Disp(FILE* file, const int level, const double total_time, const int icol) const {
     // check if any proc has called the agent
     int total_count = 0;
     MPI_Allreduce(&count_, &total_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -177,28 +177,28 @@ void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, 
     //................................................
     // compute my numbers
     if (total_count > 0) {
-        real_t scale = 1.0 / comm_size;
+        double scale = 1.0 / comm_size;
 
         // compute the counters (mean, max, min)
-        real_t local_count = count_;
-        real_t max_count;
+        double local_count = count_;
+        double max_count;
         MPI_Allreduce(&local_count, &max_count, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         // compute times passed inside + children
-        real_t local_time = time_acc_;
-        real_t sum_time;
+        double local_time = time_acc_;
+        double sum_time;
         MPI_Allreduce(&local_time, &sum_time, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        real_t mean_time           = sum_time / comm_size;
-        real_t mean_time_per_count = sum_time / total_count;
-        real_t glob_percent        = mean_time / total_time * 100.0;
+        double mean_time           = sum_time / comm_size;
+        double mean_time_per_count = sum_time / total_count;
+        double glob_percent        = mean_time / total_time * 100.0;
 
         // confidence interval 90% using the t distribution
-        real_t sum_timesq;
-        real_t local_timesq = (local_time - mean_time) * (local_time - mean_time);
+        double sum_timesq;
+        double local_timesq = (local_time - mean_time) * (local_time - mean_time);
         MPI_Allreduce(&local_timesq, &sum_timesq, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        real_t std_time   = sqrt(sum_timesq / (comm_size - 1));
-        real_t ci_90_time = std_time / sqrt(comm_size) * t_nu_interp(comm_size - 1);
+        double std_time   = sqrt(sum_timesq / (comm_size - 1));
+        double ci_90_time = std_time / sqrt(comm_size) * t_nu_interp(comm_size - 1);
 
         // printf the important information
         if (rank == 0) {
@@ -234,9 +234,9 @@ void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, 
     //................................................
     // check that everything is ok for the MPI
 #ifndef NDEBUG
-    iblock_t nchildren     = children_.size();
-    iblock_t nchildren_max = 0;
-    iblock_t nchildren_min = 0;
+    int nchildren     = children_.size();
+    int nchildren_max = 0;
+    int nchildren_min = 0;
     MPI_Allreduce(&nchildren, &nchildren_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     MPI_Allreduce(&nchildren, &nchildren_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
     m_assert((nchildren_max == nchildren) && (nchildren == nchildren_min), "TimerBlock %s: nchildren do not match: local = %d, max = %d, min = %d", name_.c_str(), nchildren, nchildren_max, nchildren_min);
@@ -246,11 +246,11 @@ void TimerBlock::Disp(FILE* file, const level_t level, const real_t total_time, 
     // recursive call to the childrens
     // get the colors
     string max_name, min_name;
-    real_t max_time = -1e+15;
-    real_t min_time = +1e+15;
+    double max_time = -1e+15;
+    double min_time = +1e+15;
     for (auto it = children_.cbegin(); it != children_.cend(); ++it) {
         TimerBlock* child = it->second;
-        real_t      ctime = child->time_acc();
+        double      ctime = child->time_acc();
         if (ctime > max_time) {
             max_time = ctime;
             max_name = child->name();
@@ -375,7 +375,7 @@ void Prof::Disp() const {
     }
 
     // get the global timing
-    real_t total_time = current_->time_acc();
+    double total_time = current_->time_acc();
 
     // display the header
     if (rank == 0) {

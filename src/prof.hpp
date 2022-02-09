@@ -14,18 +14,16 @@
 #include <string>
 
 #include "macros.hpp"
-#include "types.hpp"
 
 namespace C3PO {
 
 class TimerBlock {
    protected:
-    // bool        is_root_  = true;      //!< indicate if the block is root
-    iter_t      count_    = 0;         //!< the number of times this block has been called
+    int         count_    = 0;         //!< the number of times this block has been called
     size_t      memsize_  = 0;         //!< the memory size associated with a memory operation
-    real_t      t0_       = -1.0;      //!< temp start time of the block
-    real_t      t1_       = -1.0;      //!< temp stop time of the block
-    real_t      time_acc_ = 0.0;       //!< accumulator to add the time accumulation
+    double      t0_       = -1.0;      //!< temp start time of the block
+    double      t1_       = -1.0;      //!< temp stop time of the block
+    double      time_acc_ = 0.0;       //!< accumulator to add the time accumulation
     std::string name_     = "noname";  //!< the default name of the block
 
     TimerBlock* parent_ = nullptr;  //!< the link to the parent blocks
@@ -41,16 +39,16 @@ class TimerBlock {
 
     std::string name() const { return name_; }
     TimerBlock* parent() const { return parent_; }
-    real_t      time_acc() const;
+    double      time_acc() const;
     TimerBlock* AddChild(std::string child_name) noexcept;
 
     void SetParent(TimerBlock* parent);
-    void Disp(FILE* file, const level_t level, const real_t totalTime, const int icol) const;
+    void Disp(FILE* file, const int level, const double totalTime, const int icol) const;
 };
 
 /**
  * @brief MPI time profiler
- * 
+ *
  * @warning for the moment the chained list done for the profiler MUST be the same on every cpus
  * If you plan your profiler to have some fancy behavior, i.e. all the cpus not going though every timer,
  * you need to init the present + all the possible children before starting the timer of interest.
@@ -60,7 +58,7 @@ class Prof {
    protected:
     std::map<std::string, TimerBlock*> time_map_;
 
-    TimerBlock* current_;  //!< this is a pointer to the last TimerBlock
+    TimerBlock*       current_;  //!< this is a pointer to the last TimerBlock
     const std::string name_;
 
    public:
@@ -76,7 +74,7 @@ class Prof {
     void Disp() const;
 };
 
-}; // namespace C3PO
+};  // namespace C3PO
 
 #define m_profInit(prof, name)                              \
     ({                                                      \
@@ -125,6 +123,5 @@ class Prof {
             (m_profStop_prof_)->Leave(m_profStop_name_);    \
         }                                                   \
     })
-
 
 #endif  // SRC_PROF_HPP_

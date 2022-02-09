@@ -8,19 +8,19 @@ namespace C3PO {
  * @brief creates an empty parser with the default options: --help and --logfile
  *
  */
-Parser::Parser() : flags_set_(), arg_map_(), doc_arg_map_(), doc_flag_map_() {
+Parser::Parser() : flag_set_(), arg_map_(), doc_arg_map_(), doc_flag_map_() {
     //--------------------------------------------------------------------------
     // register a stupid
-    doc_flag_map["--help"]   = "prints this help message";
+    doc_flag_map_["--help"]  = "prints this help message";
     doc_arg_map_["--config"] = "reads the configuration from filename (ex: --config=filename";
     //--------------------------------------------------------------------------
 }
 
 /**
  * @brief creates a parser and reads the command line input
- * 
- * @param argc 
- * @param argv 
+ *
+ * @param argc
+ * @param argv
  */
 Parser::Parser(const int argc, char **argv) : Parser() {
     //--------------------------------------------------------------------------
@@ -30,7 +30,7 @@ Parser::Parser(const int argc, char **argv) : Parser() {
         string arg_string(argv[i]);
         ReadArgString_(arg_string);
     }
-    m_verb("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flags_set_.size(), argc);
+    m_verb("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flag_set_.size(), argc);
     //--------------------------------------------------------------------------
 }
 
@@ -41,14 +41,13 @@ Parser::Parser(const int argc, char **argv) : Parser() {
  * if the flag is not found, register the doc anyway and return false
  *
  */
-bool ParseFlag_(const std::string &flagkey, const std::string &doc, const bool strict) const {
+bool Parser::ParseFlag_(const std::string &flagkey, const std::string &doc) {
     //--------------------------------------------------------------------------
     // register the doc anyway
-    doc_map_[flagkey] = doc;
+    doc_arg_map_[flagkey] = doc;
 
     // try to find the flag and return it
-    const auto it = flag_set_.find(flagkey);
-    return (it != arg_map_.end());
+    return (flag_set_.count(flagkey) > 0);
     //--------------------------------------------------------------------------
 }
 
@@ -84,7 +83,7 @@ void Parser::ReadArgString_(const std::string &arg_string) {
         // verify that there is not duplicate in the command line input
         m_assert(flag_set_.find(arg_string) != flag_set_.end(), "found a duplicate command line argument : <%s>", arg_string.c_str());
         // this is a flag, simply insert the flag
-        flags_set.insert(arg_string);
+        flag_set_.insert(arg_string);
     }
     //--------------------------------------------------------------------------
 }
@@ -117,8 +116,10 @@ void Parser::ParseLogFile_() {
     // parse clean string
     std::string arg_string;
     while (clean_ss >> arg_string) {
-        add_arg_(arg_string);
+        ReadArgString_(arg_string);
     }
     //--------------------------------------------------------------------------
 }
+
+
 }  // namespace C3PO

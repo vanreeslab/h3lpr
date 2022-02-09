@@ -21,74 +21,108 @@
 
 namespace C3PO {
 
-// ==== helper methods : convert string to type (and specializations for string and bool) ===== //
+//==============================================================================
 
 /**
  * @brief converts the input string to the chosen type
  */
 template <typename T>
 inline T convertStrToType(const std::string &s) {
-    std::stringstream convert(s);
-
-    T value;
-    if (!(convert >> value)) {
-        m_assert(false, "argument value for type is invalid : <%s>", s.c_str());
-    }
+    //--------------------------------------------------------------------------
+    T                  value;
+    std::istringstream convert(s);
+    s >> value;
     return value;
+    //--------------------------------------------------------------------------
 }
 
 /**
- * @brief converts a string to a boolean based on 'true' and 'false'
- * 
- * @tparam  
- * @param s 
- * @return true 
- * @return false 
+ * @brief specialize convertStrToType() in the case of a boolean input
  */
 template <>
 inline bool convertStrToType(const std::string &s) {
-    std::stringstream convert(s);
-
-    bool value;
-    if (!(convert >> std::boolalpha >> value)) {
-        m_assert(false, "argument value for bool type is invalid : <%s>. Use true/false only.", s.c_str());
-    }
+    m_assert(s == "true" || s == "false", "The string <%s> cannot be transformed into a boolean value", s.c_str());
+    //--------------------------------------------------------------------------
+    bool               value;
+    std::istringstream convert(s);
+    convert >> std::boolalpha >> value;
     return value;
+    //--------------------------------------------------------------------------
 }
 
+/**
+ * @brief specialize convertStrToType() in the case of an input string
+ */
 template <>
 inline std::string convertStrToType(const std::string &s) {
     return s;
 }
 
-// ==== helper methods : convert type to string (and specializations for string and bool) ===== //
+//==============================================================================
+/**
+ * @brief converts a value of type T to a string
+ */
 template <typename T>
 inline std::string convertTypeToStr(const T &t) {
-    return std::to_string(t);
+    std::ostringstream s;
+    return s << t;
 }
 
+/**
+ * @brief specializes convertTypeToStr() for a boolean input
+ */
 template <>
 inline std::string convertTypeToStr(const bool &t) {
     return (t ? "true" : "false");
 }
 
+/**
+ * @brief specializes convertTypeToStr() for a string input
+ */
 template <>
 inline std::string convertTypeToStr(const std::string &t) {
     return t;
 }
 
+//==============================================================================
 /**
  * @brief The Parser reads and holds arg/val pairs and provides an interface to access them.
  *
  */
 class Parser {
    private:
-    std::set<std::string>              flags_set_; //<! contains the list of flags passed in command line
-    std::map<std::string, std::string> arg_map_; //<! 
-    std::map<std::string, std::string> doc_arg_map_;
-    std::map<std::string, std::string> doc_flag_map_;
+    std::set<std::string>              flag_set_;     //<! contains the list of flags given by the user
+    std::map<std::string, std::string> arg_map_;       //<! containes the list of the arguments + values given by the user
+    std::map<std::string, std::string> doc_arg_map_;   //!< contains the documentation for the arguments needed in the code
+    std::map<std::string, std::string> doc_flag_map_;  //!< contains the documentation for the flags needed in the code
 
+   public:
+    explicit Parser();
+    explicit Parser(const int argc, char **argv);
+
+    // bool HasValue(const std::string &arg) const {
+    //     return arguments_map.find(arg) != arguments_map.end();
+    // }
+
+    template <typename T>
+    T GetValue(const std::string &arg, const std::string &doc) const {
+        return ParseArg_<T>(arg, doc, true);
+    }
+
+    template <typename T>
+    T GetValue(const std::string &arg, const std::string &doc, const T defval) const {
+        return ParseArg_<T>(arg, doc, false, defval);
+    }
+
+    bool GetFlag(const std::string arg, const std::string &doc) {
+        return ParseFlag_(arg,doc);
+    }
+
+   protected:
     void ReadArgString_(const std::string &arg_string);
+    bool ParseFlag_(const std::string &flagkey, const std::string &doc);
+
+    void ParseLogFile_();
 
     /**
      * @brief Search for an argument and returns the value corresponding to the requested key
@@ -96,7 +130,7 @@ class Parser {
      * if the key is found, register the doc and return the value associate to the key
      * if the key is not found, register the doc anyway and return the default value
      * However if strict is true, then fail the command if the value has not been found
-     * 
+     *
      * @tparam T
      * @param argkey the key to look for
      * @param doc the documentation that will be registered to this key
@@ -105,7 +139,7 @@ class Parser {
      * @return T the value corresponding to the argkey
      */
     template <typename T>
-    T ParseArg_(const std::string &argkey, const std::string &doc, const bool strict, const T defval = T()) const {
+    T ParseArg_(const std::string &argkey, const std::string &doc, const bool strict, const T defval = T()) {
         //----------------------------------------------------------------------
         // look for the key
         const auto it = arg_map_.find(argkey);
@@ -122,7 +156,7 @@ class Parser {
             // no key is found, if the search was strict we need to display the help to help the user
             if (strict) {
                 // we add by hand the flag "--help" to force the display of the help
-                flags_set_.insert("--help");
+                flag_set_.insert("--help");
                 // register that the argument is missing
                 doc_arg_map_[argkey] = "MISSING ARGUMENT -> " + doc;
             } else {
@@ -133,30 +167,6 @@ class Parser {
             return defval;
         }
         //----------------------------------------------------------------------
-    }
-
-    bool ParseFlag_(const std::string &flagkey, const std::string &doc, const bool strict) const;
-
-   public: 
-    explicit Parser();
-    explicit Parser(const int argc, char **argv);
-
-    // bool HasValue(const std::string &arg) const {
-    //     return arguments_map.find(arg) != arguments_map.end();
-    // }
-
-    template <typename T>
-    T GetValue(const std::string& arg, const std::string& doc) const {
-        return ParseArg_<T>(arg,doc, true);
-    }
-
-    template <typename T>
-    T GetValue(const std::string& arg, const std::string& doc, const T defval) const {
-        return ParseArg_<T>(arg,doc, false, defval);
-    }
-
-    bool GetFlag(const std::string arg, const std::string& doc) {
-        return flags_set.count(arg) != 0;
     }
 
     // void print_options() const {
@@ -188,7 +198,7 @@ class Parser {
 
 //    public:
 //     ArgumentParser(const int argc, char **argv) : parse_argc(argc), parse_argv(argv) {
-//         // start to parse the commande line, argc=0 is the name of the 
+//         // start to parse the commande line, argc=0 is the name of the
 //         for (int i = 1; i < argc; i++) {
 //             std::string arg_string(argv[i]);
 //             AddArg_(arg_string);
