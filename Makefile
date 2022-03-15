@@ -145,12 +145,15 @@ test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
 	$(CXX) $(LDFLAGS) $^ -o $(TARGET)_$@ $(LIB) -L$(GTEST_LIB) $(GTEST_LIBNAME) -Wl,-rpath,$(GTEST_LIB)
 
 #-------------------------------------------------------------------------------
-install: info lib_dynamic lib_static
-	@mkdir -p $(PREFIX)/lib
-	@mkdir -p $(PREFIX)/include
+install: info lib_dynamic lib_static | install_dir
 	$(call copy_list,$(HEAD),$(PREFIX)/include)
 	$(call copy_list,$(TARGET).a,$(PREFIX)/lib)
 	$(call copy_list,$(TARGET).so,$(PREFIX)/lib)
+
+
+install_dir:
+	mkdir -p $(PREFIX)/lib
+	mkdir -p $(PREFIX)/include
 
 
 #-------------------------------------------------------------------------------
