@@ -1,5 +1,5 @@
-#ifndef C3PO_SRC_MACROS_HPP_
-#define C3PO_SRC_MACROS_HPP_
+#ifndef H3LPR_SRC_MACROS_HPP_
+#define H3LPR_SRC_MACROS_HPP_
 
 #include <execinfo.h>
 #include <mpi.h>
@@ -10,57 +10,50 @@
 #include <cstring>
 #include <limits>
 
+
+//==============================================================================
+/**
+ * @name logs and verbosity 
+ * 
+ */
+namespace H3LPR {
+extern short m_log_level_counter;
+extern char  m_log_level_prefix[32];
+};
+using H3LPR::m_log_level_counter;
+using H3LPR::m_log_level_prefix;
+
+//==============================================================================
 /**
  * @name user-defined parameters 
  * @{
  */
+
 #define M_ALIGNMENT 16  //!< memory alignement (in Byte, 16 = 2 doubles = 4 floats)
+
 /** @} */
 
+//==============================================================================
+/** @brief insist more on the alignement */
+#define m_inline \
+    __attribute__((always_inline)) inline
 
-#define M_INLINE __attribute__((always_inline)) inline
-
-/**
- * @brief returns true if the memory is aligned
- * 
- */
+/** @brief returns true if the memory is aligned */
 #define m_isaligned(a)                                  \
     ({                                                  \
         const void* m_isaligned_a_ = (void*)(a);        \
         ((uintptr_t)m_isaligned_a_) % M_ALIGNMENT == 0; \
     })
 
-#if defined(__INTEL_COMPILER)
-#define m_assume_aligned(a)                                                   \
-    ({                                                                        \
-        __typeof__(a) m_assume_aligned_a_ = (a);                              \
-        m_assert(m_isaligned(m_assume_aligned_a_), "data has to be aligned"); \
-        __assume_aligned(m_assume_aligned_a_, M_ALIGNMENT);                   \
+/** @brief instruct the compiler that the memory is aligned */
+#define m_assume_aligned(a)                                                           \
+    ({                                                                                \
+        decltype(a) m_assume_aligned_a_ = (a);                                        \
+        m_assert(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
+        (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
     })
-#define m_calloc(size)                                                                    \
-    ({                                                                                    \
-        size_t m_calloc_size_        = (size_t)(size) + M_ALIGNMENT - 1;                  \
-        size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % M_ALIGNMENT); \
-        void*  m_calloc_data_        = _mm_malloc(m_calloc_padded_size_, M_ALIGNMENT);    \
-        std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                            \
-        m_calloc_data_;                                                                   \
-    })
-#define m_free(data)                        \
-    ({                                      \
-        void* m_free_data_ = (void*)(data); \
-        _mm_free(m_free_data_);             \
-    })
-#else  //defined(__GNUC__)
-#define m_assume_aligned(a)                                                   \
-    ({                                                                        \
-        __typeof__(a) m_assume_aligned_a_ = (a);                              \
-        m_assert(m_isaligned(m_assume_aligned_a_), "data has to be aligned"); \
-        __builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT);           \
-    })
-/**
- * @brief allocate a given size (in Byte) and set to 0 the array.
- * the return pointer is aligned to M_ALIGMEMENT
- */
+
+/** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
 #define m_calloc(size)                                                                    \
     ({                                                                                    \
         size_t m_calloc_size_        = (size_t)(size) + M_ALIGNMENT - 1;                  \
@@ -70,21 +63,14 @@
         std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                            \
         m_calloc_data_;                                                                   \
     })
-/**
- * @brief frees the pointer allocated using @ref m_calloc()
- */
+/** @brief frees the pointer allocated using @ref m_calloc() */
 #define m_free(data)                        \
     ({                                      \
         void* m_free_data_ = (void*)(data); \
         std::free(m_free_data_);            \
     })
-#endif
-/** @} */
 
-/**
- * @name min max sign macros
- * 
- */
+//==============================================================================
 /**
  * @brief returns the max of two expressions
  * 
@@ -118,18 +104,7 @@
         (m_sign_zero_ < m_sign_a_) - (m_sign_a_ < m_sign_zero_); \
     })
 
-/** @} */
 
-/**
- * @name logs and verbosity 
- * 
- */
-namespace C3PO {
-extern short m_log_level_counter;
-extern char  m_log_level_prefix[32];
-};
-using C3PO::m_log_level_counter;
-using C3PO::m_log_level_prefix;
 
 #define m_log_level_plus                                  \
     ({                                                    \
@@ -152,7 +127,7 @@ using C3PO::m_log_level_prefix;
 
 /**
  * @brief m_log will be displayed as a log, either by every rank or only by the master (given LOG_ALLRANKS)
- * 
+ *
  */
 #ifndef LOG_MUTE
 #ifndef LOG_ALLRANKS
@@ -166,6 +141,17 @@ using C3PO::m_log_level_prefix;
             fprintf(stdout, "[murphy] %s %s\n", m_log_level_prefix, m_log_msg_); \
         }                                                                        \
     })
+
+#define m_log_noheader(format, ...)                           \
+    ({                                                        \
+        int m_log_noheader_rank_;                             \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_noheader_rank_); \
+        char m_log_noheader_msg_[1024];                       \
+        sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__);  \
+        if (m_log_noheader_rank_ == 0) {                      \
+            fprintf(stdout, "%s\n", m_log_noheader_msg_);     \
+        }                                                     \
+    })
 #else
 #define m_log(format, ...)                                                                   \
     ({                                                                                       \
@@ -175,9 +161,17 @@ using C3PO::m_log_level_prefix;
         sprintf(m_log_msg_, format, ##__VA_ARGS__);                                          \
         fprintf(stdout, "[%d murphy] %s %s\n", m_log_rank_, m_log_level_prefix, m_log_msg_); \
     })
+#define m_log_noheader(format, ...)                          \
+    ({                                                       \
+        char m_log_noheader_msg_[1024];                      \
+        sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
+        fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
+    })
 #endif
 #else
 #define m_log(format, ...) \
+    { ((void)0); }
+#define m_log_noheader(format, ...) \
     { ((void)0); }
 #endif
 
@@ -243,4 +237,4 @@ using C3PO::m_log_level_prefix;
 #endif
 /** @} */
 
-#endif  // C3PO_SRC_MACROS_HPP_
+#endif  // H3LPR_SRC_MACROS_HPP_

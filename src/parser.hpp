@@ -1,12 +1,7 @@
-#ifndef C3PO_SRC_PARSER_HPP_
-#define C3PO_SRC_PARSER_HPP_
+#ifndef H3LPR_SRC_PARSER_HPP_
+#define H3LPR_SRC_PARSER_HPP_
 
-// Most of this code was generously provided by Wim van Rees and is NOT the original work of the
-// Murphy development team. It was pulled from the repository
-// https://github.com/wimvanrees/growth_SM2018 on November 17th, 2021.
 
-//  Created by Wim van Rees on 8/25/16.
-//  Copyright © 2016 Wim van Rees. All rights reserved.
 
 #include <algorithm>
 #include <cctype>
@@ -19,10 +14,9 @@
 
 #include "macros.hpp"
 
-namespace C3PO {
+namespace H3LPR {
 
 //==============================================================================
-
 /**
  * @brief converts the input string to the chosen type
  */
@@ -31,7 +25,7 @@ inline T convertStrToType(const std::string &s) {
     //--------------------------------------------------------------------------
     T                  value;
     std::istringstream convert(s);
-    s >> value;
+    convert >> value;
     return value;
     //--------------------------------------------------------------------------
 }
@@ -64,8 +58,9 @@ inline std::string convertStrToType(const std::string &s) {
  */
 template <typename T>
 inline std::string convertTypeToStr(const T &t) {
-    std::ostringstream s;
-    return s << t;
+    std::ostringstream convert;
+    convert << t;
+    return convert.str();
 }
 
 /**
@@ -88,36 +83,37 @@ inline std::string convertTypeToStr(const std::string &t) {
 /**
  * @brief The Parser reads and holds arg/val pairs and provides an interface to access them.
  *
+ * :warning: this class is largely based on the code provided by Wim van Rees:
+ * (https://github.com/wimvanrees/growth_SM2018 as of November 17th, 2021).
+ *
  */
 class Parser {
    private:
-    std::set<std::string>              flag_set_;     //<! contains the list of flags given by the user
+    std::string                        name_;          //!< the name of the program called
+    std::set<std::string>              flag_set_;      //<! contains the list of flags given by the user
     std::map<std::string, std::string> arg_map_;       //<! containes the list of the arguments + values given by the user
     std::map<std::string, std::string> doc_arg_map_;   //!< contains the documentation for the arguments needed in the code
     std::map<std::string, std::string> doc_flag_map_;  //!< contains the documentation for the flags needed in the code
 
    public:
     explicit Parser();
-    explicit Parser(const int argc, char **argv);
-
-    // bool HasValue(const std::string &arg) const {
-    //     return arguments_map.find(arg) != arguments_map.end();
-    // }
+    explicit Parser(const int argc,const  char ** argv);
 
     template <typename T>
-    T GetValue(const std::string &arg, const std::string &doc) const {
+    T GetValue(const std::string &arg, const std::string &doc) {
         return ParseArg_<T>(arg, doc, true);
     }
 
     template <typename T>
-    T GetValue(const std::string &arg, const std::string &doc, const T defval) const {
+    T GetValue(const std::string &arg, const std::string &doc, const T defval) {
         return ParseArg_<T>(arg, doc, false, defval);
     }
 
     bool GetFlag(const std::string arg, const std::string &doc) {
-        return ParseFlag_(arg,doc);
+        return ParseFlag_(arg, doc);
     }
 
+    void Finalize();
 
    protected:
     void ReadArgString_(const std::string &arg_string);
@@ -150,7 +146,7 @@ class Parser {
             m_verb("Found the value for key %s as %s\n", argkey.data(), it->second.data());
             const T value = convertStrToType<T>(it->second);
             // everything went fine, register the docstring and the associated value
-            doc_arg_map_[argkey] = doc + "(default value: " + convertTypeToStr(value) + ")";
+            doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(value) + ")";
             // return the conversion of the string to the type
             return value;
         } else {
@@ -158,11 +154,13 @@ class Parser {
             if (strict) {
                 // we add by hand the flag "--help" to force the display of the help
                 flag_set_.insert("--help");
+                flag_set_.insert("--error");
+                m_log("inserting help and error");
                 // register that the argument is missing
-                doc_arg_map_[argkey] = "MISSING ARGUMENT -> " + doc;
+                doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
             } else {
                 // it was not strict, so no worries just put the documentation and the defaulted value
-                doc_arg_map_[argkey] = doc + "(default value: " + convertTypeToStr(defval) + ")";
+                doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(defval) + ")";
             }
             // return the stored default value
             return defval;
@@ -308,6 +306,6 @@ class Parser {
 //     }
 // };
 
-};  // namespace C3PO
+};  // namespace H3LPR
 
 #endif

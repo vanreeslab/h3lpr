@@ -5,7 +5,7 @@
 using std::map;
 using std::string;
 
-namespace C3PO {
+namespace H3LPR {
 
 static constexpr int    upper_rank = 1000; // approximates the infinity of procs
 static map<int, double> t_nu       = {{0, 0.0},
@@ -412,4 +412,4 @@ void Prof::Disp() const {
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
-}; // namespace C3PO
+}; // namespace H3LPR

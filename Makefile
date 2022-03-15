@@ -1,4 +1,4 @@
-# Makefile C3PO
+# Makefile H3LPR
 #------------------------------------------------------------------------------
 # useful links: 
 # - automatic vars: https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
@@ -19,7 +19,7 @@ endif
 # FROM HERE, DO NOT CHANGE
 #-------------------------------------------------------------------------------
 PREFIX ?= ./
-NAME := c3po
+NAME := h3lpr
 # library naming
 TARGET := $(NAME)
 # git commit
@@ -193,14 +193,15 @@ info: logo
 .NOTPARALLEL: logo
 
 logo:
-	$(info  _____  ___________ _____  )
-	$(info /  __ \|____ | ___ \  _  | )
-	$(info | /  \/    / / |_/ / | | | )
-	$(info | |        \ \  __/| | | | )
-	$(info | \__/\.___/ / |   \ \_/ / )
-	$(info  \____/\____/\_|    \___/  )
-	$(info                            )
-	$(info                            )
+	$(info )
+	$(info ██╗  ██╗██████╗ ██╗     ██████╗ ██████╗  )
+	$(info ██║  ██║╚════██╗██║     ██╔══██╗██╔══██╗ )
+	$(info ███████║ █████╔╝██║     ██████╔╝██████╔╝ )
+	$(info ██╔══██║ ╚═══██╗██║     ██╔═══╝ ██╔══██╗ )
+	$(info ██║  ██║██████╔╝███████╗██║     ██║  ██║ )
+	$(info ╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝     ╚═╝  ╚═╝ )
+	$(info )
+	$(info ----------------------------------------------- )
                                 
 
 -include $(DEP)

@@ -2,7 +2,7 @@
 
 using string = std::string;
 
-namespace C3PO {
+namespace H3LPR {
 
 /**
  * @brief creates an empty parser with the default options: --help and --logfile
@@ -12,18 +12,19 @@ Parser::Parser() : flag_set_(), arg_map_(), doc_arg_map_(), doc_flag_map_() {
     //--------------------------------------------------------------------------
     // register a stupid
     doc_flag_map_["--help"]  = "prints this help message";
-    doc_arg_map_["--config"] = "reads the configuration from filename (ex: --config=filename";
+    doc_arg_map_["--config"] = "reads the configuration from filename (ex: --config=filename)";
     //--------------------------------------------------------------------------
 }
 
 /**
  * @brief creates a parser and reads the command line input
- *
- * @param argc
- * @param argv
  */
-Parser::Parser(const int argc, char **argv) : Parser() {
+Parser::Parser(const int argc, const char **argv) : Parser() {
     //--------------------------------------------------------------------------
+    // get the program name
+    string name_string(argv[0]);
+    size_t slash_pos = name_string.find_last_of("/");
+    name_ = name_string.substr(slash_pos+1);
     // after the init of a standard Parser, process the command line
     // start to parse the commande line, argc = 0 is the name of the executable so skip it
     for (int i = 1; i < argc; i++) {
@@ -31,6 +32,54 @@ Parser::Parser(const int argc, char **argv) : Parser() {
         ReadArgString_(arg_string);
     }
     m_verb("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flag_set_.size(), argc);
+
+    // after having read the input, we must read the file if any
+    ParseLogFile_();
+    //--------------------------------------------------------------------------
+}
+
+/**
+ * @brief displays the help if requested
+ *
+ */
+void Parser::Finalize() {
+    //--------------------------------------------------------------------------
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // get the action to do
+    const bool do_help = flag_set_.find("--help") != flag_set_.end();
+
+    if (do_help && rank == 0) {
+        std::ostringstream buff;
+        buff << "\nPossible parameters and flags for <" << name_ << "> \n";
+
+        // possible flags
+        buff << "\nflags:\n";
+        for (auto it : doc_flag_map_) {
+            buff << "\t" << it.first << "\t" << it.second << "\n";
+        }
+
+        // possible arguments
+        buff << "\narguments:\n";
+        for (auto it : doc_arg_map_) {
+            buff << "\t" << it.first << "\t" << it.second << "\n";
+        }
+
+        // list the provided arguments
+        buff << "\nprovided:\n";
+        for (auto it : flag_set_) {
+            buff << "\t" << it << "\n";
+        }
+        for (auto it : arg_map_) {
+            buff << "\t" << it.first << "=" << it.second << "\n";
+        }
+
+        // display all that
+        std::cout << buff.str();
+    }
+    // check if we need to fail (no arguement provided)
+    const bool do_fail = flag_set_.find("--error") != flag_set_.end();
+    m_assert(!do_fail,"you have failed to provide the required argument, please read the help");
     //--------------------------------------------------------------------------
 }
 
@@ -44,7 +93,7 @@ Parser::Parser(const int argc, char **argv) : Parser() {
 bool Parser::ParseFlag_(const std::string &flagkey, const std::string &doc) {
     //--------------------------------------------------------------------------
     // register the doc anyway
-    doc_arg_map_[flagkey] = doc;
+    doc_flag_map_[flagkey] = doc;
 
     // try to find the flag and return it
     return (flag_set_.count(flagkey) > 0);
@@ -74,14 +123,16 @@ void Parser::ReadArgString_(const std::string &arg_string) {
 
         // verify that there is not duplicate in the command line argument, fail if it is the case
         // the doc map gatther
-        m_assert(arg_map_.find(key_string) != arg_map_.end(), "found a duplicate command line argument : <%s>", key_string.c_str());
+        m_assert(arg_map_.find(key_string) == arg_map_.end(), "found a duplicate command line argument : <%s>", key_string.c_str());
 
         // store the value and associate a documentation by default.
         // the documentation associate to it will be re-written if the testcase uses that value
         arg_map_[key_string] = val_string;
     } else {
+        // remove the first two '--' for the flag, so from 2 to the enda
+        // string flag = arg_string.substr(2);
         // verify that there is not duplicate in the command line input
-        m_assert(flag_set_.find(arg_string) != flag_set_.end(), "found a duplicate command line argument : <%s>", arg_string.c_str());
+        m_assert(flag_set_.find(arg_string) == flag_set_.end(), "found a duplicate command line argument : <%s>", arg_string.c_str());
         // this is a flag, simply insert the flag
         flag_set_.insert(arg_string);
     }
@@ -95,31 +146,35 @@ void Parser::ReadArgString_(const std::string &arg_string) {
 void Parser::ParseLogFile_() {
     //--------------------------------------------------------------------------
     // get the filename from the arguments given in command line
-    const auto   it       = arg_map_.find("--config");
-    const string filename = it->second;
-    // open file
-    std::ifstream input_fs(filename.c_str());
-    m_assert(input_fs.is_open(), "Could not open configuration file <%s>", filename.c_str());
+    const auto it      = arg_map_.find("--config");
+    const bool do_read = it != arg_map_.end();
 
-    // remove extraneous whitespace and comments
-    std::stringstream clean_ss;
-    std::string       file_line_str;
+    // all the cpus will read the file together
+    if (do_read) {
+        const string filename = it->second;
+        // open file
+        std::ifstream input_fs(filename.c_str());
+        m_assert(input_fs.is_open(), "Could not open configuration file <%s>", filename.c_str());
 
-    while (std::getline(input_fs, file_line_str)) {
-        std::string::size_type eol = file_line_str.find('#');
-        if (eol != std::string::npos) {
-            file_line_str.erase(eol);
+        // remove extraneous whitespace and comments
+        std::stringstream clean_ss;
+        std::string       file_line_str;
+
+        while (std::getline(input_fs, file_line_str)) {
+            std::string::size_type eol = file_line_str.find('#');
+            if (eol != std::string::npos) {
+                file_line_str.erase(eol);
+            }
+            clean_ss << file_line_str << ' ';
         }
-        clean_ss << file_line_str << ' ';
-    }
 
-    // parse clean string
-    std::string arg_string;
-    while (clean_ss >> arg_string) {
-        ReadArgString_(arg_string);
+        // parse clean string
+        std::string arg_string;
+        while (clean_ss >> arg_string) {
+            ReadArgString_(arg_string);
+        }
     }
     //--------------------------------------------------------------------------
 }
 
-
-}  // namespace C3PO
+}  // namespace H3LPR

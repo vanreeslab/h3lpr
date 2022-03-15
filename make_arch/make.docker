@@ -15,3 +15,6 @@ HDF5_LIB = /usr/local/hdf5/lib
 
 P4EST_INC := /soft/p4est-github/include
 P4EST_LIB := /soft/p4est-github/lib
+
+GTEST_INC = /soft/googletest/include
+GTEST_LIB = /soft/googletest/lib
