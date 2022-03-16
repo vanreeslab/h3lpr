@@ -4,14 +4,14 @@ on: [pull_request]
 
 jobs:
   build-h3lpr:
-    if: github.event.pull_request.draft == 'false'
+    if: ${{ !github.event.pull_request.draft }
     uses: ./.github/workflows/module_build_test.yml
     with:
       docker_image: vanreeslab/murphy_ci:v1.11
 
   # if the normal builds have been successful we can try to build the tests
   validation:
-    if: github.event.pull_request.draft == 'false'
+    if: ${{ !github.event.pull_request.draft }
     needs: [build-h3lpr]
     uses: ./.github/workflows/module_validation.yml
     with:
