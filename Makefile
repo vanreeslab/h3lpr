@@ -113,8 +113,10 @@ default: lib_dynamic lib_static
 all: lib_dynamic lib_static compdb
 
 #-------------------------------------------------------------------------------
+.PHONY: lib_dynamic
 lib_dynamic: $(TARGET).so
 
+.PHONY: lib_static
 lib_static: $(TARGET).a
 
 # the main target
@@ -145,12 +147,16 @@ test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
 	$(CXX) $(LDFLAGS) $^ -o $(TARGET)_$@ $(LIB) -L$(GTEST_LIB) $(GTEST_LIBNAME) -Wl,-rpath,$(GTEST_LIB)
 
 #-------------------------------------------------------------------------------
-install: info lib_dynamic lib_static
-	@mkdir -p $(PREFIX)/lib
-	@mkdir -p $(PREFIX)/include
+.PHONY: install
+install: info lib_dynamic lib_static | install_dir
 	$(call copy_list,$(HEAD),$(PREFIX)/include)
 	$(call copy_list,$(TARGET).a,$(PREFIX)/lib)
 	$(call copy_list,$(TARGET).so,$(PREFIX)/lib)
+
+.PHONY: install_dir
+install_dir:
+	@mkdir -p $(PREFIX)/lib
+	@mkdir -p $(PREFIX)/include
 
 
 #-------------------------------------------------------------------------------
@@ -166,42 +172,11 @@ clean:
 	@rm -rf $(TEST_DIR)/$(OBJ_DIR)/*.o
 	
 #-------------------------------------------------------------------------------
-.PHONY: logo info
-info: logo
-	$(info install dir = $(PREFIX)/lib and $(PREFIX)/include )
-	$(info compiler = $(shell $(CXX) --version))
-	$(info compil. options = $(OPTS))
-	$(info compil. flags = $(CXXFLAGS) $(OPTS) $(INC) $(DEF) -fPIC -MMD)
-	$(info linker flags = -shared $(LDFLAGS))
-	$(info using arch file = $(ARCH_FILE) )
-	$(info ---------------------------------)
-	$(info SOURCES)
-	$(info - SRC  = $(SRC))
-	$(info - HEAD = $(HEAD))
-	$(info - HEAD = $(call to_list,$(HEAD)))
-	$(info - OBJ  = $(OBJ))
-	$(info - DEP  = $(DEP))
-	$(info ---------------------------------)
-	$(info TESTING:)
-	$(info - TEST_DIR = $(TEST_DIR))
-	$(info - TEST_DIR = $(TEST_DIR)/$(OBJ_DIR))
-	$(info - test SRC = $(TSRC))
-	$(info - test OBJ = $(TOBJ))
-	$(info - test DEP = $(TDEP))
-	$(info ---------------------------------)
+.EXPORT_ALL_VARIABLES:
 
-.NOTPARALLEL: logo
-
-logo:
-	$(info )
-	$(info ██╗  ██╗██████╗ ██╗     ██████╗ ██████╗  )
-	$(info ██║  ██║╚════██╗██║     ██╔══██╗██╔══██╗ )
-	$(info ███████║ █████╔╝██║     ██████╔╝██████╔╝ )
-	$(info ██╔══██║ ╚═══██╗██║     ██╔═══╝ ██╔══██╗ )
-	$(info ██║  ██║██████╔╝███████╗██║     ██║  ██║ )
-	$(info ╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝     ╚═╝  ╚═╝ )
-	$(info )
-	$(info ----------------------------------------------- )
+.PHONY: info
+info: 
+	@$(MAKE) --file=info.mak
                                 
 
 -include $(DEP)
