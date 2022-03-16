@@ -1,4 +1,4 @@
-#include "prof.hpp"
+#include "profiler.hpp"
 
 #include <mpi.h>
 
@@ -30,7 +30,7 @@ static map<int, double> t_nu       = {{0, 0.0},
  */
 double t_nu_interp(const int nu) {
     m_assert(nu >= 0, "the nu param = %d must be positive", nu);
-    //-------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     if (nu == 0) {
         // easy, it's 0
         return 0.0;
@@ -52,24 +52,35 @@ double t_nu_interp(const int nu) {
         // m_log("nu_up = %d, nu_low = %d, t_up=%f, t_low=%f",nu_up,nu_low,t_up, t_low);
         return t_low + (t_up-t_low)/(nu_up-nu_low)*(nu-nu_low);
     }
-    //-------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 }
 
+/**
+ * @brief defines a simple block with a given name
+ */
 TimerBlock::TimerBlock(string name) {
+    //--------------------------------------------------------------------------
     name_  = name;
     t0_    = -1.0;
     t1_    = -1.0;
     count_ = 0;
-}
-
-TimerBlock::~TimerBlock() {
-    for (auto it = children_.begin(); it != children_.end(); ++it) {
-        delete it->second;
-    }
+    //--------------------------------------------------------------------------
 }
 
 /**
- * @brief start the timer
+ * @brief deletes the current TimeBlock and delete its children 
+ * 
+ */
+TimerBlock::~TimerBlock() {
+    //--------------------------------------------------------------------------
+    for (auto it = children_.begin(); it != children_.end(); ++it) {
+        delete it->second;
+    }
+    //--------------------------------------------------------------------------
+}
+
+/**
+ * @brief start the timer using MPI_Wtime
  * 
  */
 void TimerBlock::Start() {
@@ -79,13 +90,14 @@ void TimerBlock::Start() {
 }
 
 /**
- * @brief stop the timer
+ * @brief stop the timer using MPI_Wtime
  * 
  */
 void TimerBlock::Stop() {
-    m_assert(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
     // get the time
     t1_ = MPI_Wtime();
+    // 
+    m_assert(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
     // store it
     double dt = t1_ - t0_;
     time_acc_ = time_acc_ + dt;
@@ -94,6 +106,10 @@ void TimerBlock::Stop() {
     t1_ = -1.0;
 }
 
+/**
+ * @brief adds a child to my list of children
+ * 
+ */
 TimerBlock* TimerBlock::AddChild(string child_name) noexcept {
     // find cleanly the child
     auto it = children_.find(child_name);
@@ -156,7 +172,7 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 // setup the displayed name
-#ifdef COLOR_PROF
+#if (M_COLOR_PROF)
     string shifter = "\033[0;35m";
 #else
     string shifter;
@@ -168,7 +184,7 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
         shifter = shifter + "|-> ";
     }
 // string myname = shifter + "\033[0m" + "\033[1m" + name_ + "\033[0m";
-#ifdef COLOR_PROF
+#if (M_COLOR_PROF)
     string myname = shifter + "\033[0m" + name_;
 #else
     string myname = shifter + name_;
@@ -197,12 +213,12 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
         double sum_timesq;
         double local_timesq = (local_time - mean_time) * (local_time - mean_time);
         MPI_Allreduce(&local_timesq, &sum_timesq, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        double std_time   = sqrt(sum_timesq / (comm_size - 1));
-        double ci_90_time = std_time / sqrt(comm_size) * t_nu_interp(comm_size - 1);
+        double std_time   = (comm_size > 1) ? (sqrt(sum_timesq / (comm_size - 1))) : 0.0;
+        double ci_90_time = (comm_size > 1) ? (std_time / sqrt(comm_size) * t_nu_interp(comm_size - 1)) : 0.0;
 
         // printf the important information
         if (rank == 0) {
-#ifdef COLOR_PROF
+#if (M_COLOR_PROF)
             // printf("%-25.25s|  %9.4f\t%9.4f\t%9.6f\t%9.6f\t%9.6f\t%9.6f\t%9.6f\t%09.1f\t%9.2f\n", myname.c_str(), glob_percent, loc_percent, mean_time, self_time, mean_time_per_count, min_time_per_count, max_time_per_count, mean_count, mean_bandwidth);
             if (icol == 0) {  // go red
                 printf("%-60.60s %s\033[0;31m%09.6f\033[0m %% -> \033[0;31m%07.4f\033[0m [s] +- %07.4f [s] \t\t\t(%.4f [s/call], %.0f calls)\n", myname.c_str(), shifter.c_str(), glob_percent, mean_time, ci_90_time, mean_time_per_count, max_count);
@@ -233,7 +249,7 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
 
     //................................................
     // check that everything is ok for the MPI
-#ifndef NDEBUG
+#if (M_DEBUG)
     int nchildren     = children_.size();
     int nchildren_max = 0;
     int nchildren_min = 0;
@@ -275,13 +291,10 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
 }
 
 //===============================================================================================================================
-//===============================================================================================================================
-//===============================================================================================================================
-
 /**
  * @brief Construct a new Prof with a default name
  */
-Prof::Prof() : name_("default") {
+Profiler::Profiler() : name_("default") {
     // create the current Timer Block "root"
     current_ = new TimerBlock("root");
 }
@@ -289,35 +302,35 @@ Prof::Prof() : name_("default") {
 /**
  * @brief Construct a new Prof with a given name
  */
-Prof::Prof(const string myname) : name_(myname) {
+Profiler::Profiler(const string myname) : name_(myname) {
     current_ = new TimerBlock("root");
 }
 
 /**
  * @brief Destroy the Prof
  */
-Prof::~Prof() {
+Profiler::~Profiler() {
     delete current_;
 }
 
 /**
  * @brief initialize the timer and move to it
  */
-void Prof::Init(string name) {
+void Profiler::Init(string name)  noexcept{
     current_ = current_->AddChild(name);
 }
 
 /**
  * @brief start the timer of the TimerBlock
  */
-void Prof::Start(string name) {
+void Profiler::Start(string name) noexcept {
     current_->Start();
 }
 
 /**
  * @brief stop the timer of the TimerBlock
  */
-void Prof::Stop(string name) {
+void Profiler::Stop(string name) noexcept {
     m_assert(name == current_->name(), "we are trying to stop %s which is not the most recent timer started = %s", name.c_str(), current_->name().c_str());
     current_->Stop();
 }
@@ -325,7 +338,7 @@ void Prof::Stop(string name) {
 /**
  * @brief go back to the parent of the present timer block
  */
-void Prof::Leave(string name) {
+void Profiler::Leave(string name)noexcept  {
     current_ = current_->parent();
 }
 
@@ -333,7 +346,7 @@ void Prof::Leave(string name) {
  * @brief display the whole profiler using 
  * 
  */
-void Prof::Disp() const {
+void Profiler::Disp() const {
     m_assert(current_->name() == "root", "the current TimerBlock is not the root, please stop any current timer firsts");
     int comm_size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -343,35 +356,12 @@ void Prof::Disp() const {
     string folder = "./prof";
 
     MPI_Barrier(MPI_COMM_WORLD);
-
-    // //-------------------------------------------------------------------------
-    // /** - I/O of the parentality */
-    // //-------------------------------------------------------------------------
-
-    // if (rank == 0) {
-    //     struct stat st = {0};
-    //     if (stat(folder.c_str(), &st) == -1) {
-    //         mkdir(folder.c_str(), 0770);
-    //     }
-
-    //     string filename = folder + "/" + name_ + "_parent.csv";
-    //     file            = fopen(filename.c_str(), "w+");
-
-    //     if (file != nullptr) {
-    //         // current_->DumpParentality(file, 0);
-    //         fclose(file);
-    //     } else {
-    //         printf("unable to open file %s !", filename.c_str());
-    //     }
-    // }
-
     //-------------------------------------------------------------------------
     /** - do the IO of the timing */
     //-------------------------------------------------------------------------
-
+    string filename = "./prof/" + name_ + "_time.csv";
     if (rank == 0) {
-        string filename = "./prof/" + name_ + "_time.csv";
-        file            = fopen(filename.c_str(), "w+");
+        file = fopen(filename.c_str(), "w+");
     }
 
     // get the global timing
@@ -380,7 +370,7 @@ void Prof::Disp() const {
     // display the header
     if (rank == 0) {
         printf("===================================================================================================================================================\n");
-#ifdef COLOR_PROF
+#if (M_COLOR_PROF)
         printf("        PROFILER %s --> total time = \033[0;33m%.4f\033[m [s] \n\n", name_.c_str(), total_time);
 #else
         printf("        PROFILER %s --> total time = %.4f [s] \n\n", name_.c_str(), total_time);
@@ -392,21 +382,21 @@ void Prof::Disp() const {
 
     // display footer
     if (rank == 0) {
-#ifdef COLOR_PROF
         printf("===================================================================================================================================================\n");
         printf("WARNING:\n");
         printf("  - times are mean-time with their associated 90%% CI\n");
         printf("  - the percentage might not be consistent are they only reflect rank-0 timing\n");
+#if (M_COLOR_PROF)
         printf("legend:\n");
         printf("  - \033[0;31mthis indicates the most expensive step of the most expensive operation\033[0m\n");
         printf("  - \033[0;33mthis indicates the most expensive step of the parent operation\033[0m\n");
-        printf("===================================================================================================================================================\n");
 #endif
+        printf("===================================================================================================================================================\n");
 
         if (file != nullptr) {
             fclose(file);
         } else {
-            printf("unable to open file for profiling !");
+            printf("unable to open file for profiling <%s>!", filename.c_str());
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);

@@ -10,6 +10,12 @@
 #include <cstring>
 #include <limits>
 
+#ifndef NDEBUG
+#define M_DEBUG 1
+#else
+#define M_DEBUG 0
+#endif
+
 
 //==============================================================================
 /**
