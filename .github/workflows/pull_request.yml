@@ -6,14 +6,14 @@ on:
 
 jobs:
   build-h3lpr:
-    uses: van-Rees-Lab/h3lpr/.github/workflows/module_build_test.yml
+    uses: ./.github/workflows/module_build_test.yml
     with:
       docker_image: vanreeslab/murphy_ci:v1.11
 
   # if the normal builds have been successful we can try to build the tests
   validation:
     needs: [build-h3lpr]
-    uses: van-Rees-Lab/h3lpr/.github/workflows/module_validation.yml
+    uses: ./.github/workflows/module_validation.yml
     with:
       machine: yoda
       docker_image: vanreeslab/murphy_ci:v1.11
