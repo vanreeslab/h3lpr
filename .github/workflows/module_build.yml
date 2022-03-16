@@ -1,0 +1,42 @@
+name: Build murphy
+
+# defines the default parameters to call that shit
+on:
+  workflow_call:
+    inputs:
+      machine:
+        required: false
+        type: string
+        default: self-hosted
+      timeout:
+        required: false
+        type: number
+        default: 60
+      docker_image:
+        required: true
+        type: string
+
+jobs:
+  #-----------------------------------------------------------------------------
+  murphy:
+    #...........................................................................
+    # build for the debug and non-debug mode
+    strategy:
+      matrix:
+        opts: [" ", "-DNDEBUG"]
+      # do NOT cancel any job of the matrix if one has fail
+      fail-fast: false
+    #...........................................................................
+    # standard parameters: any runner, 20 min and latest container
+    runs-on: ${{inputs.machine}}
+    timeout-minutes: ${{inputs.timeout}}
+    container:
+      image: ${{inputs.docker_image}}
+    #...........................................................................
+    # define the steps
+    steps:
+      #checkout the repo
+      - uses: actions/checkout@v2
+      # do the build
+      - name: build
+        run: ARCH_FILE=make_arch/make.docker make -j12 OPTS="${{matrix.opts}}"

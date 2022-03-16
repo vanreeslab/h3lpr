@@ -1,0 +1,19 @@
+name: pull request
+
+on: 
+  pull_request:
+    types: [ready_for_review]
+
+jobs:
+  build-h3lpr:
+    uses: van-Rees-Lab/h3lpr/.github/workflows/module_build_test.yml@develop
+    with:
+      docker_image: vanreeslab/murphy_ci:v1.11
+
+  # if the normal builds have been successful we can try to build the tests
+  validation:
+    needs: [build-h3lpr]
+    uses: van-Rees-Lab/h3lpr/.github/workflows/module_validation.yml@develop
+    with:
+      machine: yoda
+      docker_image: vanreeslab/murphy_ci:v1.11
