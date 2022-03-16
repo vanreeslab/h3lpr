@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-h3lpr:
-    uses: van-Rees-Lab/h3lpr/.github/workflows/module_build_test.ym
+    uses: van-Rees-Lab/h3lpr/.github/workflows/module_build_test.yml
     with:
       docker_image: vanreeslab/murphy_ci:v1.11
 
