@@ -1,0 +1,17 @@
+name: commit checks
+
+# build is done for every push on the repo + all the time another workflow requests it
+on: [push]
+
+jobs:
+  build-murphy:
+    uses: ./.github/workflows/module_build.yml
+    with:
+      docker_image: vanreeslab/murphy_ci:v1.11
+
+  # if the normal builds have been successful we can try to build the tests
+  build-test:
+    needs: build-murphy
+    uses: ./.github/workflows/module_build_test.yml
+    with:
+      docker_image: vanreeslab/murphy_ci:v1.11
