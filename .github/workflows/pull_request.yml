@@ -15,5 +15,4 @@ jobs:
     needs: [build-h3lpr]
     uses: ./.github/workflows/module_validation.yml
     with:
-      machine: yoda
       docker_image: vanreeslab/murphy_ci:v1.11
