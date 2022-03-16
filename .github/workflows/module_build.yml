@@ -1,4 +1,4 @@
-name: Build murphy
+name: build h3lpr
 
 # defines the default parameters to call that shit
 on:

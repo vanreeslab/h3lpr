@@ -1,4 +1,4 @@
-name: Build murphy test
+name: build h3lpr test
 
 # defines the default parameters to call that shit
 on:
@@ -39,4 +39,4 @@ jobs:
       - uses: actions/checkout@v2
       # do the build
       - name: build
-        run: ARCH_FILE=make_arch/make.docker_gcc_test make test -j12 OPTS="${{matrix.opts}}"
+        run: ARCH_FILE=make_arch/make.docker make test -j12 OPTS="${{matrix.opts}}"
