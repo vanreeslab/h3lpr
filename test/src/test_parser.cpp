@@ -24,10 +24,13 @@ TEST_F(TestParser, help) {
 
     // get a few option to populate the help
     bool is_flag   = parser.GetFlag("--flag", "the flag sets is_flag to true");
+    EXPECT_EQ(is_flag, false);
     int  opt_param = parser.GetValue<int>("--optional-param", "an optional parameter", 3);
     EXPECT_EQ(opt_param, 3);
     double mandatory_param = parser.GetValue<double>("--mandatory-param", "a mandatory parameter");
     EXPECT_EQ(mandatory_param, 0.1);
+
+    bool is_flag2 = parser.TestFlag("--flag2");
 
     parser.Finalize();
 }

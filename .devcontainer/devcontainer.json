@@ -1,3 +1,4 @@
+
 // For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.112.0/containers/docker-existing-dockerfile
 {
@@ -7,7 +8,7 @@
 	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
 	// "dockerFile": "docker/Dockerfile",
 	// Rather use an image from DockerHub, first download it or build it
-	"image": "vanreeslab/murphy:v1.14",
+	"image": "vanreeslab/murphy:v1.15",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"telemetry.enableTelemetry": false,

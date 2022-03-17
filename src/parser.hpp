@@ -97,28 +97,51 @@ class Parser {
 
    public:
     explicit Parser();
-    explicit Parser(const int argc,const  char ** argv);
+    explicit Parser(const int argc, const char **argv);
 
+    void Finalize();
+
+    //--------------------------------------------------------------------------
+
+    /** @brief return the value of a given argument and register the associated documentation. Fails if the value has not been provided */
     template <typename T>
     T GetValue(const std::string &arg, const std::string &doc) {
         return ParseArg_<T>(arg, doc, true);
     }
 
+    /** @brief return the value of a given argument and register the associated documentation. */
     template <typename T>
     T GetValue(const std::string &arg, const std::string &doc, const T defval) {
+        //----------------------------------------------------------------------
         return ParseArg_<T>(arg, doc, false, defval);
+        //----------------------------------------------------------------------
     }
 
+    /** @brief Test if a flag has been registered and register the associated documentation */
     bool GetFlag(const std::string arg, const std::string &doc) {
+        //----------------------------------------------------------------------
+        m_assert(doc != "", "the documentation cannot be empty");
         return ParseFlag_(arg, doc);
+        //----------------------------------------------------------------------
     }
 
-    void Finalize();
+    /** @brief Test if a flag has been registered, no documentation is registered */
+    bool TestFlag(const std::string arg) {
+        //----------------------------------------------------------------------
+        return ParseFlag_(arg, "");
+        //----------------------------------------------------------------------
+    }
+
+    /** @brief force the call of the help at the coming Finalize call */
+    void ForceHelp() {
+        //----------------------------------------------------------------------
+        flag_set_.insert("--help");
+        //----------------------------------------------------------------------
+    }
 
    protected:
     void ReadArgString_(const std::string &arg_string);
     bool ParseFlag_(const std::string &flagkey, const std::string &doc);
-
     void ParseLogFile_();
 
     /**
@@ -167,144 +190,7 @@ class Parser {
         }
         //----------------------------------------------------------------------
     }
-
-    // void print_options() const {
-    //     for (const auto &it : arguments_map)
-    //         printf("%s %s ", it.first.data(), it.second.data());
-    //     printf("\n");
-    // }
-
-    // void save_options() {
-    //     FILE *f = getFileHandle();
-    //     if (f == nullptr) return;
-    //     for (const auto &it : arguments_map)
-    //         fprintf(f, "%s %s ", it.first.data(), it.second.data());
-    //     fclose(f);
-    // }
-
-    // void finalize() const {
-    //     FILE *f = getFileHandle();
-    //     if (f == nullptr) return;
-    //     fprintf(f, "\n");
-    //     fclose(f);
-    // }
 };
-
-// class ArgumentParser : public Parser {
-//    private:
-//     const int    parse_argc = 0;
-//     const char **parse_argv = nullptr;
-
-//    public:
-//     ArgumentParser(const int argc, char **argv) : parse_argc(argc), parse_argv(argv) {
-//         // start to parse the commande line, argc=0 is the name of the
-//         for (int i = 1; i < argc; i++) {
-//             std::string arg_string(argv[i]);
-//             AddArg_(arg_string);
-//         }
-
-//         if (verbose) m_log("found %ld arguments and %ld flags out of %d\n", arguments_map.size(), flags_set.size(), argc);
-//     }
-
-//     int getargc() const {
-//         return parse_argc;
-//     }
-
-//     char **getargv() const {
-//         return parse_argv;
-//     }
-// };
-
-// /**
-//  * @brief Parses a string containing arg/val pairs.
-//  *
-//  * Example usage:
-//  *
-//  *     std::string testString = "--arg1=val1 --arg2=val2 --arg3=val3";
-//  *     StringParser parser(testString);
-//  *     std::cout << "arg1 = " << parser("--arg1").asString() << std::endl;
-//  */
-// class StringParser : public Parser {
-//    protected:
-//     // trim methods from stackoverflow
-
-//     // trim from start
-//     inline std::string &ltrim(std::string &s) {
-//         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-//         return s;
-//     }
-
-//     // trim from end
-//     inline std::string &rtrim(std::string &s) {
-//         s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-//         return s;
-//     }
-
-//     // trim from both ends
-//     inline std::string &trim(std::string &s) {
-//         return ltrim(rtrim(s));
-//     }
-
-//    public:
-//     StringParser(std::string &input) {
-//         std::string        arg_string;
-//         std::istringstream iss(input);
-//         while (iss >> arg_string) {
-//             add_arg_(arg_string);
-//         }
-//     }
-// };
-
-// /**
-//  * @brief Parses a config file. See doc/parser.md for the format.
-//  *
-//  */
-// class ConfigParser : public Parser {
-//    protected:
-//     // trim methods from stackoverflow
-
-//     // trim from start
-//     inline std::string &ltrim(std::string &s) {
-//         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-//         return s;
-//     }
-
-//     // trim from end
-//     inline std::string &rtrim(std::string &s) {
-//         s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-//         return s;
-//     }
-
-//     // trim from both ends
-//     inline std::string &trim(std::string &s) {
-//         return ltrim(rtrim(s));
-//     }
-
-//    public:
-//     ConfigParser(const std::string &filename) {
-//         // open file
-//         std::ifstream input_fs(filename.c_str());
-//         m_assert(input_fs.is_open(), "Could not open configuration file <%s>", filename.c_str());
-
-//         // remove extraneous whitespace and comments
-//         std::stringstream clean_ss;
-//         std::string       file_line_str;
-
-//         while (std::getline(input_fs, file_line_str)) {
-//             std::string::size_type eol = file_line_str.find('#');
-//             if (eol != std::string::npos) {
-//                 file_line_str.erase(eol);
-//             }
-//             clean_ss << file_line_str << ' ';
-//         }
-
-//         // parse clean string
-//         std::string arg_string;
-//         while (clean_ss >> arg_string) {
-//             add_arg_(arg_string);
-//         }
-//     }
-// };
 
 };  // namespace H3LPR
 
