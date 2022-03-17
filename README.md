@@ -23,7 +23,7 @@ m_profEnd(&prof,"substep");
 m_profEnd(&prof,"step");
 
 // here MPI calls will happen
-prof.Disp()
+m_profDisp(&prof);
 ```
 
 ### Parser
@@ -38,6 +38,7 @@ We currently support:
 The way to used the parser is:
 
 - first read the command line
+- 
 ```c++
 Parser parser(argc,argv)
 ```
@@ -65,7 +66,7 @@ By default, only the rank 0 of `MPI_COMM_WORLD` will print the message. To have 
 
 To have a personalised header, we encourage you to define a macro in your code that wraps the default macro `m_log_default`. Here is the code snippet we used to define the logs of h3lpr:
 
-```
+```c++
 #define m_log_h3lpr(format, ...)                   \
     ({                                             \
         m_log_def("h3lpr", format, ##__VA_ARGS__); \
