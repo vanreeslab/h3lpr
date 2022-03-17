@@ -137,7 +137,7 @@ using H3LPR::m_log_level_prefix;
  */
 #ifndef LOG_MUTE
 #ifndef LOG_ALLRANKS
-#define m_log_h3lpr(header_name, format, ...)                                             \
+#define m_log_def(header_name, format, ...)                                               \
     ({                                                                                    \
         int m_log_rank_;                                                                  \
         MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                                      \
@@ -159,7 +159,7 @@ using H3LPR::m_log_level_prefix;
         }                                                     \
     })
 #else
-#define m_log_h3lpr(header_name, format, ...)                                                         \
+#define m_log_def(header_name, format, ...)                                                           \
     ({                                                                                                \
         int m_log_rank_;                                                                              \
         MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                                                  \
@@ -167,6 +167,7 @@ using H3LPR::m_log_level_prefix;
         sprintf(m_log_msg_, format, ##__VA_ARGS__);                                                   \
         fprintf(stdout, "[%d %s] %s %s\n", m_log_rank_, header_name, m_log_level_prefix, m_log_msg_); \
     })
+
 #define m_log_noheader(format, ...)                          \
     ({                                                       \
         char m_log_noheader_msg_[1024];                      \
@@ -175,11 +176,16 @@ using H3LPR::m_log_level_prefix;
     })
 #endif
 #else
-#define m_log(format, ...) \
+#define m_log_def(header_name, format, ...) \
     { ((void)0); }
 #define m_log_noheader(format, ...) \
     { ((void)0); }
 #endif
+
+#define m_log_h3lpr(format, ...)                   \
+    ({                                             \
+        m_log_def("h3lpr", format, ##__VA_ARGS__); \
+    })
 
 /**
  * @brief m_verb will be displayed if VERBOSE is enabled

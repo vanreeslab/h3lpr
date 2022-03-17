@@ -155,7 +155,7 @@ class Parser {
                 // we add by hand the flag "--help" to force the display of the help
                 flag_set_.insert("--help");
                 flag_set_.insert("--error");
-                m_log("inserting help and error");
+                m_log_h3lpr("inserting help and error");
                 // register that the argument is missing
                 doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
             } else {

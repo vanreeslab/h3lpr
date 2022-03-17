@@ -21,7 +21,7 @@ endif
 PREFIX ?= ./
 NAME := h3lpr
 # library naming
-TARGET := lib$(NAME)
+TARGET := $(NAME)
 # git commit
 GIT_COMMIT ?= $(shell git describe --always --dirty)
 
@@ -150,8 +150,8 @@ test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
 .PHONY: install
 install: info lib_dynamic lib_static | install_dir
 	$(call copy_list,$(HEAD),$(PREFIX)/include/${NAME})
-	$(call copy_list,$(TARGET).a,$(PREFIX)/lib)
-	$(call copy_list,$(TARGET).so,$(PREFIX)/lib)
+	$(call copy_list,$(TARGET).a,$(PREFIX)/lib/lib$(TARGET).a)
+	$(call copy_list,$(TARGET).so,$(PREFIX)/lib/lib$(TARGET).so)
 	@rm -r $(TARGET).so
 	@rm -r $(TARGET).a
 
