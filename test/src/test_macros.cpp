@@ -24,3 +24,23 @@ TEST_F(TestMacros, alloc) {
 
     m_free(a);
 }
+
+TEST_F(TestMacros, log) {
+    m_log_h3lpr("coucou-1.0");
+    m_log_level_minus;
+    m_log_h3lpr("coucou-2.0");
+    m_log_level_plus;
+    m_log_h3lpr("coucou-2.1");
+    m_log_level_plus;
+    m_log_level_plus;
+    m_log_h3lpr("coucou-2.3");
+    m_log_level_minus;
+    m_log_level_minus;
+    m_log_level_minus;
+    m_log_level_minus;
+    m_log_h3lpr("coucou-3.0");
+}
+
+TEST_F(TestMacros, verb) {
+    m_verb_h3lpr("this message should be seen if compiled in VERBOSE");
+}

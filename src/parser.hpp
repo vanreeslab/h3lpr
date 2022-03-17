@@ -166,7 +166,7 @@ class Parser {
 
         // if the key is found, simply register the doc and return the value
         if (it != arg_map_.end()) {
-            m_verb("Found the value for key %s as %s\n", argkey.data(), it->second.data());
+            m_verb_h3lpr("Found the value for key %s as %s\n", argkey.data(), it->second.data());
             const T value = convertStrToType<T>(it->second);
             // everything went fine, register the docstring and the associated value
             doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(value) + ")";
