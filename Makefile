@@ -21,7 +21,7 @@ endif
 PREFIX ?= ./
 NAME := h3lpr
 # library naming
-TARGET := $(NAME)
+TARGET := lib$(NAME)
 # git commit
 GIT_COMMIT ?= $(shell git describe --always --dirty)
 
