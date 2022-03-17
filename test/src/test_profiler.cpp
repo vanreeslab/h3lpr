@@ -73,5 +73,5 @@ TEST_F(TestProf, prof) {
         m_profStop(&prof, "test-cpp");
     }
 
-    prof.Disp();
+    m_profDisp(&prof);
 }
