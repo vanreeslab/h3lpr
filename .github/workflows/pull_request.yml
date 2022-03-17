@@ -1,6 +1,8 @@
 name: pull request
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, review_requested]
 
 jobs:
   build-h3lpr:
