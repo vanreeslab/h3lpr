@@ -92,8 +92,10 @@ void Parser::Finalize() {
  */
 bool Parser::ParseFlag_(const std::string &flagkey, const std::string &doc) {
     //--------------------------------------------------------------------------
-    // register the doc anyway
-    doc_flag_map_[flagkey] = doc;
+    // register the doc if the documentation is not empty
+    if (doc != "") {
+        doc_flag_map_[flagkey] = doc;
+    }
 
     // try to find the flag and return it
     return (flag_set_.count(flagkey) > 0);
