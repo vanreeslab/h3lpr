@@ -31,7 +31,7 @@ Parser::Parser(const int argc, const char **argv) : Parser() {
         string arg_string(argv[i]);
         ReadArgString_(arg_string);
     }
-    m_verb("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flag_set_.size(), argc);
+    m_verb_h3lpr("found %ld arguments and %ld flags out of %d\n", arguments_map_.size(), flag_set_.size(), argc);
 
     // after having read the input, we must read the file if any
     ParseLogFile_();
