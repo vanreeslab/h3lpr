@@ -46,4 +46,29 @@ Parser parser(argc,argv)
 
 ### Logging
 
+The log is be used to print message in the output of the code. There are different ways of using it. 
+The basic usage is the following
 
+```c++
+double pi = 3.1415;
+m_log_h3lpr("pi is equal to %e", pi);
+```
+
+The output looks like: 
+
+```text
+[h3lpr] pi is equal to 3.1415
+```
+The format of the output follows the implementation of the standard. 
+
+By default, only the rank 0 of `MPI_COMM_WORLD` will print the message. To have all the ranks displaying the message, the code must be compiled with `-DLOG_ALLRANKS`. 
+
+To have a personalised header, we encourage you to define a macro in your code that wraps the default macro `m_log_default`. Here is the code snippet we used to define the logs of h3lpr:
+
+```
+#define m_log_h3lpr(format, ...)                   \
+    ({                                             \
+        m_log_def("h3lpr", format, ##__VA_ARGS__); \
+    })
+```
+To perform a run without any log, you can compile the librairy with the `-DLOG_MUTE` flag.

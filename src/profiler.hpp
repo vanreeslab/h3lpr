@@ -130,4 +130,12 @@ class Profiler {
         }                                                   \
     })
 
+#define m_profDisp(prof)                                              \
+    ({                                                                \
+        H3LPR::Profiler* m_profDisp_prof_ = (H3LPR::Profiler*)(prof); \
+        if ((m_profDisp_prof_) != nullptr) {                          \
+            (m_profDisp_prof_)->Disp();                               \
+        }                                                             \
+    })
+
 #endif  // SRC_PROF_HPP_

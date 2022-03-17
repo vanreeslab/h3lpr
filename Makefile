@@ -149,14 +149,14 @@ test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
 #-------------------------------------------------------------------------------
 .PHONY: install
 install: info lib_dynamic lib_static | install_dir
-	$(call copy_list,$(HEAD),$(PREFIX)/include)
-	$(call copy_list,$(TARGET).a,$(PREFIX)/lib)
-	$(call copy_list,$(TARGET).so,$(PREFIX)/lib)
+	$(call copy_list,$(HEAD),$(PREFIX)/include/${NAME})
+	$(call mv_list,$(TARGET).a,$(PREFIX)/lib/lib$(TARGET).a)
+	$(call mv_list,$(TARGET).so,$(PREFIX)/lib/lib$(TARGET).so)
 
 .PHONY: install_dir
 install_dir:
 	@mkdir -p $(PREFIX)/lib
-	@mkdir -p $(PREFIX)/include
+	@mkdir -p $(PREFIX)/include/$(NAME)
 
 
 #-------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ clean:
 	@rm -rf $(TARGET)_test
 	@rm -rf $(OBJ_DIR)/*
 	@rm -rf $(PREFIX)/lib/*
-	@rm -rf $(PREFIX)/include/*
+	@rm -rf $(PREFIX)/include/$(NAME)/*
 	@rm -rf $(TEST_DIR)/$(OBJ_DIR)/*.o
 	
 #-------------------------------------------------------------------------------
