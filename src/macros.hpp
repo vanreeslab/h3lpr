@@ -137,15 +137,15 @@ using H3LPR::m_log_level_prefix;
  */
 #ifndef LOG_MUTE
 #ifndef LOG_ALLRANKS
-#define m_log(format, ...)                                                       \
-    ({                                                                           \
-        int m_log_rank_;                                                         \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                             \
-        if (m_log_rank_ == 0) {                                                  \
-            char m_log_msg_[1024];                                               \
-            sprintf(m_log_msg_, format, ##__VA_ARGS__);                          \
-            fprintf(stdout, "[murphy] %s %s\n", m_log_level_prefix, m_log_msg_); \
-        }                                                                        \
+#define m_log_h3lpr(header_name, format, ...)                                             \
+    ({                                                                                    \
+        int m_log_rank_;                                                                  \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                                      \
+        if (m_log_rank_ == 0) {                                                           \
+            char m_log_msg_[1024];                                                        \
+            sprintf(m_log_msg_, format, ##__VA_ARGS__);                                   \
+            fprintf(stdout, "[%s] %s %s\n", header_name, m_log_level_prefix, m_log_msg_); \
+        }                                                                                 \
     })
 
 #define m_log_noheader(format, ...)                           \
@@ -159,13 +159,13 @@ using H3LPR::m_log_level_prefix;
         }                                                     \
     })
 #else
-#define m_log(format, ...)                                                                   \
-    ({                                                                                       \
-        int m_log_rank_;                                                                     \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                                         \
-        char m_log_msg_[1024];                                                               \
-        sprintf(m_log_msg_, format, ##__VA_ARGS__);                                          \
-        fprintf(stdout, "[%d murphy] %s %s\n", m_log_rank_, m_log_level_prefix, m_log_msg_); \
+#define m_log_h3lpr(header_name, format, ...)                                                         \
+    ({                                                                                                \
+        int m_log_rank_;                                                                              \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_rank_);                                                  \
+        char m_log_msg_[1024];                                                                        \
+        sprintf(m_log_msg_, format, ##__VA_ARGS__);                                                   \
+        fprintf(stdout, "[%d %s] %s %s\n", m_log_rank_, header_name, m_log_level_prefix, m_log_msg_); \
     })
 #define m_log_noheader(format, ...)                          \
     ({                                                       \
