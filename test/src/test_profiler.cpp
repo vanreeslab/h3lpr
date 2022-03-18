@@ -25,7 +25,7 @@ TEST_F(TestProf, prof) {
         double* a = reinterpret_cast<double*>(m_calloc(sizeof(double) * size));
         m_profStop(&prof, "alloc");
 
-        m_assert(m_isaligned(a), "the pointer a must be aligned");
+        m_assert_h3lpr(m_isaligned(a), "the pointer a must be aligned");
 
         // normal loop, aligned memory
         m_profStart(&prof, "loop - no assumed aligned");
