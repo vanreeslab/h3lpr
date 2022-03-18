@@ -264,11 +264,11 @@ extern char  m_log_level_prefix[32];
  */
 #ifdef VERBOSE
 #define m_begin_def(header_name)                                                                             \
-    m_assert(omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
+    m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
     double m_begin_T0 = MPI_Wtime();                                                        \
     m_verb_def(header_name, "----- entering %s", __func__);
 #define m_end_def(header_name)                                                                               \
-    m_assert(omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
+    m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
     double m_end_T1_ = MPI_Wtime();                                                         \
     m_verb_def(header_name, "----- leaving %s after %lf [s]", __func__, (m_end_T1_) - (m_begin_T0));
 #else
