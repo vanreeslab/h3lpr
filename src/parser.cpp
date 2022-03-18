@@ -10,9 +10,14 @@ namespace H3LPR {
  */
 Parser::Parser() : flag_set_(), arg_map_(), doc_arg_map_(), doc_flag_map_() {
     //--------------------------------------------------------------------------
+    string help_key   = "--help";
+    string config_key = "--config";
     // register a stupid
-    doc_flag_map_["--help"]  = "prints this help message";
-    doc_arg_map_["--config"] = "reads the configuration from filename (ex: --config=filename)";
+    doc_flag_map_[help_key]  = "prints this help message";
+    doc_arg_map_[config_key] = "reads the configuration from filename (ex: --config=filename)";
+    // update the lengths
+    max_flag_length = m_max(max_flag_length, help_key.length());
+    max_arg_length  = m_max(max_arg_length, config_key.length());
     //--------------------------------------------------------------------------
 }
 
@@ -56,13 +61,19 @@ void Parser::Finalize() {
         // possible flags
         buff << "\nflags:\n";
         for (auto it : doc_flag_map_) {
-            buff << "\t" << it.first << "\t" << it.second << "\n";
+            string key = it.first;
+            m_assert_h3lpr(max_flag_length >= key.length(), "the max length = %ld must be bigger than the key length = %ld", max_flag_length, key.length());
+            key.append(max_flag_length - key.length() + 3, 0x20);
+            buff << "\t" << key << it.second << "\n";
         }
 
         // possible arguments
         buff << "\narguments:\n";
         for (auto it : doc_arg_map_) {
-            buff << "\t" << it.first << "\t" << it.second << "\n";
+            string key = it.first;
+            m_assert_h3lpr(max_arg_length >= key.length(), "the max length = %ld must be bigger than the key length = %ld", max_arg_length, key.length());
+            key.append(max_arg_length - key.length() + 3, 0x20);
+            buff << "\t" << key << it.second << "\n";
         }
 
         // list the provided arguments
@@ -88,13 +99,17 @@ void Parser::Finalize() {
  *
  * if the flag is found, register the doc and return true
  * if the flag is not found, register the doc anyway and return false
+ * 
+ * @warning the documentation is overwritten in case the flag has already been requested
  *
  */
 bool Parser::ParseFlag_(const std::string &flagkey, const std::string &doc) {
     //--------------------------------------------------------------------------
     // register the doc if the documentation is not empty
+    // if already present it's overwritten
     if (doc != "") {
         doc_flag_map_[flagkey] = doc;
+        max_flag_length = m_max(max_flag_length, flagkey.length());
     }
 
     // try to find the flag and return it

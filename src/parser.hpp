@@ -89,6 +89,9 @@ inline std::string convertTypeToStr(const std::string &t) {
  */
 class Parser {
    private:
+    size_t max_flag_length = 0;  //!< max length of the flags (used to properly display the help)
+    size_t max_arg_length  = 0;  //!< max length of the flags (used to properly display the help)
+
     std::string                        name_;          //!< the name of the program called
     std::set<std::string>              flag_set_;      //<! contains the list of flags given by the user
     std::map<std::string, std::string> arg_map_;       //<! containes the list of the arguments + values given by the user
@@ -113,6 +116,7 @@ class Parser {
     template <typename T>
     T GetValue(const std::string &arg, const std::string &doc, const T defval) {
         //----------------------------------------------------------------------
+        m_log_h3lpr("looking for %s",arg.c_str());
         return ParseArg_<T>(arg, doc, false, defval);
         //----------------------------------------------------------------------
     }
@@ -150,6 +154,8 @@ class Parser {
      * if the key is found, register the doc and return the value associate to the key
      * if the key is not found, register the doc anyway and return the default value
      * However if strict is true, then fail the command if the value has not been found
+     * 
+     * @warning the documentation is overwritten in case the argument has already been requested
      *
      * @tparam T
      * @param argkey the key to look for
@@ -170,6 +176,7 @@ class Parser {
             const T value = convertStrToType<T>(it->second);
             // everything went fine, register the docstring and the associated value
             doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(value) + ")";
+            max_arg_length       = m_max(max_arg_length, argkey.length());
             // return the conversion of the string to the type
             return value;
         } else {
@@ -178,12 +185,13 @@ class Parser {
                 // we add by hand the flag "--help" to force the display of the help
                 flag_set_.insert("--help");
                 flag_set_.insert("--error");
-                m_log_h3lpr("inserting help and error");
                 // register that the argument is missing
                 doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
+                max_arg_length       = m_max(max_arg_length, argkey.length());
             } else {
                 // it was not strict, so no worries just put the documentation and the defaulted value
                 doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(defval) + ")";
+                max_arg_length       = m_max(max_arg_length, argkey.length());
             }
             // return the stored default value
             return defval;
