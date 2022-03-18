@@ -30,7 +30,7 @@ TEST_F(TestProf, prof) {
         // normal loop, aligned memory
         m_profStart(&prof, "loop - no assumed aligned");
         for (int i = 0; i < size; ++i) {
-            a[i] = i * i;
+            a[i] = 2.3 * i;
         }
         m_profStop(&prof, "loop - no assumed aligned");
 
@@ -38,13 +38,13 @@ TEST_F(TestProf, prof) {
         double* a_algn = m_assume_aligned(a);
         m_profStart(&prof, "loop - assumed aligned");
         for (int i = 0; i < size; ++i) {
-            a_algn[i] = i * i;
+            a_algn[i] = 2.3 * i;
         }
         m_profStop(&prof, "loop - assumed aligned");
 
         // lambda loop
         auto op = [&a](const int i) {
-            a[i] = i * i;
+            a[i] = 2.3 * i;
         };
         m_profStart(&prof, "loop - lambda");
         for (int i = 0; i < size; ++i) {
@@ -66,7 +66,7 @@ TEST_F(TestProf, prof) {
         // get the aligned pointer
         m_profStart(&prof, "loop");
         for (int i = 0; i < size; ++i) {
-            b[i] = i * i;
+            b[i] = 2.3 * i;
         }
         m_profStop(&prof, "loop");
 
