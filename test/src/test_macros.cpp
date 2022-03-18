@@ -15,7 +15,7 @@ TEST_F(TestMacros, alloc) {
     // alloc a random memory
     double* a = reinterpret_cast<double*>(m_calloc(sizeof(double) * 17));
 
-    m_assert(m_isaligned(a), "the pointer a must be aligned");
+    m_assert_h3lpr(m_isaligned(a), "the pointer a must be aligned");
     // get the aligned pointer
     double* a_algn = m_assume_aligned(a);
     for (int i = 0; i < 17; ++i) {

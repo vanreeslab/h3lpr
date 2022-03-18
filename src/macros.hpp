@@ -48,7 +48,7 @@ extern char  m_log_level_prefix[32];
 #define m_assume_aligned(a)                                                           \
     ({                                                                                \
         decltype(a) m_assume_aligned_a_ = (a);                                        \
-        m_assert(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
+        m_assert_h3lpr(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
         (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
     })
 
@@ -235,33 +235,23 @@ extern char  m_log_level_prefix[32];
     { ((void)0); }
 #endif
 
-#define m_log_h3lpr(format, ...)                   \
-    ({                                             \
-        m_log_def("h3lpr", format, ##__VA_ARGS__); \
-    })
-
-#define m_verb_h3lpr(format, ...)                   \
-    ({                                              \
-        m_verb_def("h3lpr", format, ##__VA_ARGS__); \
-    })
-
 /**
  * @brief m_assert defines the assertion call, disable if NDEBUG is asked
  *
  */
 #ifdef NDEBUG
-#define m_assert(cond, ...) \
+#define m_assert_def(cond, ...) \
     { ((void)0); }
 #else
-#define m_assert(cond, ...)                                                                                                               \
+#define m_assert_def(header_name, cond, ...)                                                                                                               \
     ({                                                                                                                                    \
-        bool m_assert_cond_ = (bool)(cond);                                                                                               \
-        if (!(m_assert_cond_)) {                                                                                                          \
-            char m_assert_msg_[1024];                                                                                                     \
-            int  m_assert_rank_;                                                                                                          \
-            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_rank_);                                                                               \
-            sprintf(m_assert_msg_, __VA_ARGS__);                                                                                          \
-            fprintf(stdout, "[%d murphy-assert] '%s' FAILED: %s (at %s:%d)\n", m_assert_rank_, #cond, m_assert_msg_, __FILE__, __LINE__); \
+        bool m_assert_def_cond_ = (bool)(cond);                                                                                               \
+        if (!(m_assert_def_cond_)) {                                                                                                          \
+            char m_assert_def_msg_[1024];                                                                                                     \
+            int  m_assert_def_rank_;                                                                                                          \
+            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                               \
+            sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                          \
+            fprintf(stdout, "[%d %s-assert] '%s' FAILED: %s (at %s:%d)\n", m_assert_def_rank_, header_name, #cond, m_assert_def_msg_, __FILE__, __LINE__); \
             fflush(stdout);                                                                                                               \
             MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                    \
         }                                                                                                                                 \
@@ -273,20 +263,40 @@ extern char  m_log_level_prefix[32];
  *
  */
 #ifdef VERBOSE
-#define m_begin                                                                             \
-    m_assert(omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_begin_T0 = MPI_Wtime();                                                        \
-    m_verb("----- entering %s", __func__);
-#define m_end                                                                               \
-    m_assert(omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_end_T1_ = MPI_Wtime();                                                         \
-    m_verb("----- leaving %s after %lf [s]", __func__, (m_end_T1_) - (m_begin_T0));
+#define m_begin_def(header_name)                                                                             \
+    m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
+    double m_begin_def_T0 = MPI_Wtime();                                                        \
+    m_verb_def(header_name, "----- entering %s", __func__);
+#define m_end_def(header_name)                                                                               \
+    m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
+    double m_end_def_T1_ = MPI_Wtime();                                                         \
+    m_verb_def(header_name, "----- leaving %s after %lf [s]", __func__, (m_end_def_T1_) - (m_begin_def_T0));
 #else
-#define m_begin \
+#define m_begin_def(header_name) \
     { ((void)0); }
-#define m_end \
+#define m_end_def(header_name) \
     { ((void)0); }
 #endif
 /** @} */
+
+#define m_log_h3lpr(format, ...)                   \
+    ({                                             \
+        m_log_def("h3lpr", format, ##__VA_ARGS__); \
+    })
+
+#define m_verb_h3lpr(format, ...)                   \
+    ({                                              \
+        m_verb_def("h3lpr", format, ##__VA_ARGS__); \
+    })
+
+#define m_assert_h3lpr(format, ...)                   \
+    ({                                                \
+        m_assert_def("h3lpr", format, ##__VA_ARGS__); \
+    })
+
+#define m_begin_h3lpr \
+    { (m_begin_def("h3lpr")); }
+#define m_end_h3lpr \
+    { (m_end_def("h3lpr")); }
 
 #endif  // H3LPR_SRC_MACROS_HPP_

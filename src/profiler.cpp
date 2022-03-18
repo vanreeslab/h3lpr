@@ -29,7 +29,7 @@ static map<int, double> t_nu       = {{0, 0.0},
  * @return double the confidence interval param
  */
 double t_nu_interp(const int nu) {
-    m_assert(nu >= 0, "the nu param = %d must be positive", nu);
+    m_assert_h3lpr(nu >= 0, "the nu param = %d must be positive", nu);
     //--------------------------------------------------------------------------
     if (nu == 0) {
         // easy, it's 0
@@ -84,7 +84,7 @@ TimerBlock::~TimerBlock() {
  * 
  */
 void TimerBlock::Start() {
-    m_assert(t0_ < -0.5, "the block %s has already been started", name_.c_str());
+    m_assert_h3lpr(t0_ < -0.5, "the block %s has already been started", name_.c_str());
     count_ += 1;
     t0_ = MPI_Wtime();
 }
@@ -97,7 +97,7 @@ void TimerBlock::Stop() {
     // get the time
     t1_ = MPI_Wtime();
     // 
-    m_assert(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
+    m_assert_h3lpr(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
     // store it
     double dt = t1_ - t0_;
     time_acc_ = time_acc_ + dt;
@@ -255,7 +255,7 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     int nchildren_min = 0;
     MPI_Allreduce(&nchildren, &nchildren_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     MPI_Allreduce(&nchildren, &nchildren_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-    m_assert((nchildren_max == nchildren) && (nchildren == nchildren_min), "TimerBlock %s: nchildren do not match: local = %d, max = %d, min = %d", name_.c_str(), nchildren, nchildren_max, nchildren_min);
+    m_assert_h3lpr((nchildren_max == nchildren) && (nchildren == nchildren_min), "TimerBlock %s: nchildren do not match: local = %d, max = %d, min = %d", name_.c_str(), nchildren, nchildren_max, nchildren_min);
 #endif
 
     //................................................
@@ -331,7 +331,7 @@ void Profiler::Start(string name) noexcept {
  * @brief stop the timer of the TimerBlock
  */
 void Profiler::Stop(string name) noexcept {
-    m_assert(name == current_->name(), "we are trying to stop %s which is not the most recent timer started = %s", name.c_str(), current_->name().c_str());
+    m_assert_h3lpr(name == current_->name(), "we are trying to stop %s which is not the most recent timer started = %s", name.c_str(), current_->name().c_str());
     current_->Stop();
 }
 
@@ -347,7 +347,7 @@ void Profiler::Leave(string name)noexcept  {
  * 
  */
 void Profiler::Disp() const {
-    m_assert(current_->name() == "root", "the current TimerBlock is not the root, please stop any current timer firsts");
+    m_assert_h3lpr(current_->name() == "root", "the current TimerBlock is not the root, please stop any current timer firsts");
     int comm_size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
