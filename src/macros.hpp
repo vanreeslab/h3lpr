@@ -48,7 +48,7 @@ extern char  m_log_level_prefix[32];
 #define m_assume_aligned(a)                                                           \
     ({                                                                                \
         decltype(a) m_assume_aligned_a_ = (a);                                        \
-        m_assert(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
+        m_assert_h3lpr(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
         (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
     })
 
