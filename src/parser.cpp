@@ -79,7 +79,7 @@ void Parser::Finalize() {
     }
     // check if we need to fail (no arguement provided)
     const bool do_fail = flag_set_.find("--error") != flag_set_.end();
-    m_assert(!do_fail,"you have failed to provide the required argument, please read the help");
+    m_assert_h3lpr(!do_fail,"you have failed to provide the required argument, please read the help");
     //--------------------------------------------------------------------------
 }
 
@@ -112,7 +112,7 @@ void Parser::ReadArgString_(const std::string &arg_string) {
     //--------------------------------------------------------------------------
     // verify that it is an admissible flag : starts with "--" and has at least one
     if (arg_string.length() <= 2 || arg_string[0] != '-' || arg_string[1] != '-') {
-        m_assert(false, "found an unexpected command-line entry : <%s>", arg_string.c_str());
+        m_assert_h3lpr(false, "found an unexpected command-line entry : <%s>", arg_string.c_str());
     }
 
     // check if this arg contains an '=' :
@@ -125,7 +125,7 @@ void Parser::ReadArgString_(const std::string &arg_string) {
 
         // verify that there is not duplicate in the command line argument, fail if it is the case
         // the doc map gatther
-        m_assert(arg_map_.find(key_string) == arg_map_.end(), "found a duplicate command line argument : <%s>", key_string.c_str());
+        m_assert_h3lpr(arg_map_.find(key_string) == arg_map_.end(), "found a duplicate command line argument : <%s>", key_string.c_str());
 
         // store the value and associate a documentation by default.
         // the documentation associate to it will be re-written if the testcase uses that value
@@ -134,7 +134,7 @@ void Parser::ReadArgString_(const std::string &arg_string) {
         // remove the first two '--' for the flag, so from 2 to the enda
         // string flag = arg_string.substr(2);
         // verify that there is not duplicate in the command line input
-        m_assert(flag_set_.find(arg_string) == flag_set_.end(), "found a duplicate command line argument : <%s>", arg_string.c_str());
+        m_assert_h3lpr(flag_set_.find(arg_string) == flag_set_.end(), "found a duplicate command line argument : <%s>", arg_string.c_str());
         // this is a flag, simply insert the flag
         flag_set_.insert(arg_string);
     }
@@ -156,7 +156,7 @@ void Parser::ParseLogFile_() {
         const string filename = it->second;
         // open file
         std::ifstream input_fs(filename.c_str());
-        m_assert(input_fs.is_open(), "Could not open configuration file <%s>", filename.c_str());
+        m_assert_h3lpr(input_fs.is_open(), "Could not open configuration file <%s>", filename.c_str());
 
         // remove extraneous whitespace and comments
         std::stringstream clean_ss;

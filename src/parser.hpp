@@ -35,7 +35,7 @@ inline T convertStrToType(const std::string &s) {
  */
 template <>
 inline bool convertStrToType(const std::string &s) {
-    m_assert(s == "true" || s == "false", "The string <%s> cannot be transformed into a boolean value", s.c_str());
+    m_assert_h3lpr(s == "true" || s == "false", "The string <%s> cannot be transformed into a boolean value", s.c_str());
     //--------------------------------------------------------------------------
     bool               value;
     std::istringstream convert(s);
@@ -120,7 +120,7 @@ class Parser {
     /** @brief Test if a flag has been registered and register the associated documentation */
     bool GetFlag(const std::string arg, const std::string &doc) {
         //----------------------------------------------------------------------
-        m_assert(doc != "", "the documentation cannot be empty");
+        m_assert_h3lpr(doc != "", "the documentation cannot be empty");
         return ParseFlag_(arg, doc);
         //----------------------------------------------------------------------
     }
