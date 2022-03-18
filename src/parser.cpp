@@ -56,13 +56,18 @@ void Parser::Finalize() {
         // possible flags
         buff << "\nflags:\n";
         for (auto it : doc_flag_map_) {
-            buff << "\t" << it.first << "\t" << it.second << "\n";
+            string key = it.first;
+            // 0x20 is the space char
+            key.append(max_flag_length - key.length(),0x20);
+            buff << "\t" << key << "\t" << it.second << "\n";
         }
 
         // possible arguments
         buff << "\narguments:\n";
         for (auto it : doc_arg_map_) {
-            buff << "\t" << it.first << "\t" << it.second << "\n";
+            string key = it.first;
+            key.append(max_arg_length - key.length(),0x20);
+            buff << "\t" << key << "\t" << it.second << "\n";
         }
 
         // list the provided arguments
@@ -88,13 +93,18 @@ void Parser::Finalize() {
  *
  * if the flag is found, register the doc and return true
  * if the flag is not found, register the doc anyway and return false
+ * 
+ * @warning the documentation is overwritten in case the flag has already been requested
  *
  */
 bool Parser::ParseFlag_(const std::string &flagkey, const std::string &doc) {
     //--------------------------------------------------------------------------
     // register the doc if the documentation is not empty
+    // if already present it's overwritten
     if (doc != "") {
         doc_flag_map_[flagkey] = doc;
+        // store the max flag key
+        max_flag_length = m_max(max_flag_length, flagkey.length());
     }
 
     // try to find the flag and return it
