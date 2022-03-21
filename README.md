@@ -35,15 +35,39 @@ We currently support:
 - flags: `--flag` interpreted as a boolean
 - arguments: `--argument=value` interpreted as a value
 
-The way to used the parser is:
-
+The way to used the parser can be summarized as below.
 - first read the command line
-- 
+
 ```c++
-Parser parser(argc,argv)
+Parser parser(argc,argv);
+
+// add some flags + documentaton
+bool is_flag = parser.GetFlag("--flag","the documentation of the flag");
+double value = parser.GetValue<double>("--value","the documentation of the value",0.1);
+
+// display the help if needed
+parser.Finalize();
 ```
 
-- indicate which value is used 
+In the command line, the use of the parser would then be
+
+```bash
+./program --flag --value=0.1
+```
+
+In case you wish to display the possible flags, you can use the `--help` flag.
+This is performed during the `Finalize` execution.
+
+Finally, you can also use a configuration file to avoid typing a long sequence of arguments.
+The file is given to the parser as `--config=filename`. The syntax would then be something like:
+
+```makefile
+# this is a comment on the flag
+--flag
+# this is a comment on the value
+--value=0.1
+```
+
 
 ### Logging
 

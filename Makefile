@@ -179,7 +179,7 @@ info:
 	@$(MAKE) --file=info.mak
                                 
 
--include $(DEP)
+-include $(DEP) $(TDEP)
 
 # mkdir the needed dirs
 $(shell   mkdir -p $(OBJ_DIR) $(TEST_DIR)/$(OBJ_DIR))
