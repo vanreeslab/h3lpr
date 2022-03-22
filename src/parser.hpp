@@ -116,7 +116,7 @@ class Parser {
     template <typename T>
     T GetValue(const std::string &arg, const std::string &doc, const T defval) {
         //----------------------------------------------------------------------
-        m_log_h3lpr("looking for %s",arg.c_str());
+        m_verb_h3lpr("looking for %s",arg.c_str());
         return ParseArg_<T>(arg, doc, false, defval);
         //----------------------------------------------------------------------
     }
