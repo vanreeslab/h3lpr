@@ -167,7 +167,7 @@ clean:
 	@rm -rf $(TARGET).a
 	@rm -rf $(TARGET)_test
 	@rm -rf $(OBJ_DIR)/*
-	@rm -rf $(PREFIX)/lib/*
+	@rm -rf $(PREFIX)/lib/$(TARGET)*
 	@rm -rf $(PREFIX)/include/$(NAME)/*
 	@rm -rf $(TEST_DIR)/$(OBJ_DIR)/*.o
 	
