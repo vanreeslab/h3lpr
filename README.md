@@ -44,6 +44,7 @@ Parser parser(argc,argv);
 // add some flags + documentaton
 bool is_flag = parser.GetFlag("--flag","the documentation of the flag");
 double value = parser.GetValue<double>("--value","the documentation of the value",0.1);
+auto values  = parser.GetValues<double,2>("--array","the documentation of the values",{0.1,0.2});
 
 // display the help if needed
 parser.Finalize();
@@ -52,7 +53,7 @@ parser.Finalize();
 In the command line, the use of the parser would then be
 
 ```bash
-./program --flag --value=0.1
+./program --flag --value=0.1 --array=1.7,2.9
 ```
 
 In case you wish to display the possible flags, you can use the `--help` flag.
