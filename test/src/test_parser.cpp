@@ -49,6 +49,33 @@ TEST_F(TestParser, flag) {
     parser.Finalize();
 }
 
+TEST_F(TestParser, array) {
+    const int   argc   = 4;
+    const char* msg[4] = {"./h3lpr", "--array_1=2,1,0,3,4", "--array_2=3.1,4.1,5.9", "--help"};
+
+    // create the parser
+    Parser parser(argc, msg);
+
+    // get a few option to populate the help
+    auto array_1 = parser.GetValues<int, 5>("--array_1", "array of size 5");
+    EXPECT_EQ(array_1[0], 2);
+    EXPECT_EQ(array_1[1], 1);
+    EXPECT_EQ(array_1[2], 0);
+    EXPECT_EQ(array_1[3], 3);
+    EXPECT_EQ(array_1[4], 4);
+
+    auto array_2 = parser.GetValues<double, 3>("--array_2", "array of size 3");
+    EXPECT_EQ(array_2[0], 3.1);
+    EXPECT_EQ(array_2[1], 4.1);
+    EXPECT_EQ(array_2[2], 5.9);
+
+    auto array_3 = parser.GetValues<double, 2>("--array_3", "array of size 2", {1.7, 2.9});
+    EXPECT_EQ(array_3[0], 1.7);
+    EXPECT_EQ(array_3[1], 2.9);
+
+    parser.Finalize();
+}
+
 TEST_F(TestParser, file) {
     const int   argc   = 3;
     const char* msg[3] = {"./h3lpr", "--config=config", "--help"};
