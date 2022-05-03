@@ -67,6 +67,8 @@ The file is given to the parser as `--config=filename`. The syntax would then be
 --flag
 # this is a comment on the value
 --value=0.1
+# this is a comment on the array
+--array=1.7,2.9
 ```
 
 
