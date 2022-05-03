@@ -80,6 +80,11 @@ inline std::string convertTypeToStr(const std::string &t) {
     return t;
 }
 
+/**
+ * @brief first string is the documentation and second one is the default argument
+ */
+using h3lpr_docargstr = std::tuple<std::string, std::string>;
+
 //==============================================================================
 /**
  * @brief The Parser reads and holds arg/val pairs and provides an interface to access them.
@@ -95,8 +100,8 @@ class Parser {
 
     std::string name_;  //!< the name of the program called
 
-    std::map<std::string, std::string> doc_arg_map_;   //!< contains the documentation for the arguments needed in the code
-    std::map<std::string, std::string> doc_flag_map_;  //!< contains the documentation for the flags needed in the code
+    std::map<std::string, std::string>     doc_flag_map_;  //!< contains the documentation for the flags needed in the code
+    std::map<std::string, h3lpr_docargstr> doc_arg_map_;   //!< contains the documentation for the arguments needed in the code
 
     std::set<std::string>              flag_set_;  //<! contains the list of flags given by the user
     std::map<std::string, std::string> arg_map_;   //<! contains the list of the arguments + values given by the user
@@ -195,8 +200,11 @@ class Parser {
             m_verb_h3lpr("Found the value for key %s as %s\n", argkey.data(), it->second.data());
             const T value = convertStrToType<T>(it->second);
             // everything went fine, register the docstring and the associated value
-            doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(value) + " )";
-            max_arg_length       = m_max(max_arg_length, argkey.length());
+            std::string doc_val = convertTypeToStr(value);
+            std::string msg_key = argkey + "[=" + doc_val + "]";
+
+            doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+            max_arg_length       = m_max(max_arg_length, msg_key.length());
             // return the conversion of the string to the type
             return value;
         } else {
@@ -206,12 +214,21 @@ class Parser {
                 flag_set_.insert("--help");
                 flag_set_.insert("--error");
                 // register that the argument is missing
-                doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
-                max_arg_length       = m_max(max_arg_length, argkey.length());
+                // doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
+                // max_arg_length       = m_max(max_arg_length, argkey.length());
+                std::string doc_val = "!MISSING ARGUMENT!";
+                std::string msg_key = argkey + "[=" + doc_val + "]";
+
+                doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+                max_arg_length       = m_max(max_arg_length, msg_key.length());
             } else {
+                std::string doc_val = convertTypeToStr(defval);
+                std::string msg_key = argkey + "[=" + doc_val + "]";
                 // it was not strict, so no worries just put the documentation and the defaulted value
-                doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(defval) + " )";
-                max_arg_length       = m_max(max_arg_length, argkey.length());
+                // doc_arg_map_[argkey] = doc + " (default value: " + convertTypeToStr(defval) + " )";
+                // max_arg_length       = m_max(max_arg_length, argkey.length());
+                doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+                max_arg_length       = m_max(max_arg_length, msg_key.length());
             }
             // return the stored default value
             return defval;
@@ -245,8 +262,12 @@ class Parser {
             m_verb_h3lpr("Found the value for key %s as %s\n", argkey.data(), it->second.data());
 
             // everything went fine, register the docstring and the associated value
-            doc_arg_map_[argkey] = doc + " (default value: " + str_defval + " )";
-            max_arg_length       = m_max(max_arg_length, argkey.length());
+            std::string doc_val  = str_defval;
+            std::string msg_key  = argkey + "[=" + doc_val + "]";
+            doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+            max_arg_length       = m_max(max_arg_length, msg_key.length());
+            // doc_arg_map_[argkey] = doc + " (default value: " + str_defval + " )";
+            // max_arg_length       = m_max(max_arg_length, argkey.length());
 
             std::array<T, C> value;
 
@@ -276,12 +297,20 @@ class Parser {
                 flag_set_.insert("--help");
                 flag_set_.insert("--error");
                 // register that the argument is missing
-                doc_arg_map_[argkey] = doc + " (MISSING ARGUMENT)";
-                max_arg_length       = m_max(max_arg_length, argkey.length());
+                // doc_arg_map_[argkey] = doc + " ()";
+                // max_arg_length       = m_max(max_arg_length, argkey.length());
+                std::string doc_val  = "!MISSING ARGUMENT!";
+                std::string msg_key  = argkey + "[=" + doc_val + "]";
+                doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+                max_arg_length       = m_max(max_arg_length, msg_key.length());
             } else {
                 // it was not strict, so no worries just put the documentation and the defaulted value
-                doc_arg_map_[argkey] = doc + " (default value: " + str_defval + " )";
-                max_arg_length       = m_max(max_arg_length, argkey.length());
+                // doc_arg_map_[argkey] = doc + " (default value: " + str_defval + " )";
+                // max_arg_length       = m_max(max_arg_length, argkey.length());
+                std::string doc_val  = str_defval;
+                std::string msg_key  = argkey + "[=" + doc_val + "]";
+                doc_arg_map_[argkey] = h3lpr_docargstr(doc, doc_val);
+                max_arg_length       = m_max(max_arg_length, msg_key.length());
             }
             // return the stored default value
             return defval;
