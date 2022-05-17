@@ -8,7 +8,7 @@ include makefun.mak
 
 ################################################################################
 # ARCH DEPENDENT VARIABLES
-ARCH_FILE ?= make_arch/make.docker
+ARCH_FILE ?= make_arch/make.default
 
 #only include the ARCH_FILE when we do not clean or destroy
 ifneq ($(MAKECMDGOALS),clean)

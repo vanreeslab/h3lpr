@@ -1,8 +1,8 @@
 CXX = mpic++
 CC = mpicc
 
-CXXFLAGS := -O3 -g -ggdb -fopenmp -DCOLOR_PROF
-LDFLAGS := -fopenmp -lstdc++ -lm
+CXXFLAGS := -O3 -g -ggdb -fopenmp -DCOLOR_PROF -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+LDFLAGS := -fopenmp -lstdc++ -lm  -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 
 GTEST_INC = /soft/googletest/include
 GTEST_LIB = /soft/googletest/lib
