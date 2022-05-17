@@ -1,0 +1,5 @@
+CXX ?= mpic++
+CC ?= mpicc
+
+CXXFLAGS ?= -O3 -g -ggdb -fopenmp
+LDFLAGS ?= -fopenmp -lstdc++ -lm
