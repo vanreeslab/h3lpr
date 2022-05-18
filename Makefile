@@ -143,7 +143,7 @@ compdb_full: $(CDB) $(TCDB)
 
 #-------------------------------------------------------------------------------
 .PHONY: test 
-test: $(TOBJ) $(filter-out $(OBJ_DIR)/main.o,$(OBJ)) $(TARGET).so
+test: $(TOBJ) $(TARGET).so
 	$(CXX) $(LDFLAGS) $^ -o $(TARGET)_$@ $(LIB) -L$(GTEST_LIB) $(GTEST_LIBNAME) -Wl,-rpath,$(GTEST_LIB)
 
 #-------------------------------------------------------------------------------
