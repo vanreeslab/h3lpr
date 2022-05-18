@@ -16,6 +16,12 @@
 #define M_DEBUG 0
 #endif
 
+#ifndef LOG_ALLRANKS
+#define M_LOG_ALLRANKS 1
+#else
+#define M_LOG_ALLRANKS 0
+#endif
+
 //==============================================================================
 /**
  * @name logs and verbosity
@@ -171,45 +177,27 @@ extern char  m_log_level_prefix[32];
  *
  */
 #ifndef LOG_MUTE
-#ifndef LOG_ALLRANKS
 #define m_log_def(header_name, format, ...)                                                          \
     ({                                                                                               \
         int m_log_def_rank_;                                                                         \
         MPI_Comm_rank(MPI_COMM_WORLD, &m_log_def_rank_);                                             \
-        if (m_log_def_rank_ == 0) {                                                                  \
+        if (m_log_def_rank_ == 0 || M_LOG_ALLRANKS) {                                                \
             char m_log_def_msg_[1024];                                                               \
             sprintf(m_log_def_msg_, format, ##__VA_ARGS__);                                          \
             fprintf(stdout, "[%s] %s %s\n", header_name, H3LPR::m_log_level_prefix, m_log_def_msg_); \
         }                                                                                            \
     })
 
-#define m_log_noheader(format, ...)                           \
-    ({                                                        \
-        int m_log_noheader_rank_;                             \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_noheader_rank_); \
-        char m_log_noheader_msg_[1024];                       \
-        sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__);  \
-        if (m_log_noheader_rank_ == 0) {                      \
-            fprintf(stdout, "%s\n", m_log_noheader_msg_);     \
-        }                                                     \
+#define m_log_noheader(format, ...)                              \
+    ({                                                           \
+        int m_log_noheader_rank_;                                \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_noheader_rank_);    \
+        if (m_log_noheader_rank_ == 0 || M_LOG_ALLRANKS) {       \
+            char m_log_noheader_msg_[1024];                      \
+            sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
+            fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
+        }                                                        \
     })
-#else
-#define m_log_def(header_name, format, ...)                                                                          \
-    ({                                                                                                               \
-        int m_log_def_rank_;                                                                                         \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_def_rank_);                                                             \
-        char m_log_def_msg_[1024];                                                                                   \
-        sprintf(m_log_def_msg_, format, ##__VA_ARGS__);                                                              \
-        fprintf(stdout, "[%d %s] %s %s\n", m_log_def_rank_, header_name, H3LPR::m_log_level_prefix, m_log_def_msg_); \
-    })
-
-#define m_log_noheader(format, ...)                          \
-    ({                                                       \
-        char m_log_noheader_msg_[1024];                      \
-        sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
-        fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
-    })
-#endif
 #else
 #define m_log_def(header_name, format, ...) \
     { ((void)0); }
@@ -222,13 +210,15 @@ extern char  m_log_level_prefix[32];
  *
  */
 #ifdef VERBOSE
-#define m_verb_def(header_name, format, ...)                                             \
-    ({                                                                                   \
-        int m_verb_def_rank_;                                                            \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_verb_def_rank_);                                \
-        char m_verb_def_msg_[1024];                                                      \
-        sprintf(m_verb_def_msg_, format, ##__VA_ARGS__);                                 \
-        fprintf(stdout, "[%d %s] %s\n", m_verb_def_rank_, header_name, m_verb_def_msg_); \
+#define m_verb_def(header_name, format, ...)                                                 \
+    ({                                                                                       \
+        int m_verb_def_rank_;                                                                \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_verb_def_rank_);                                    \
+        if (m_verb_def_rank_ == 0 || M_LOG_ALLRANKS) {                                       \
+            char m_verb_def_msg_[1024];                                                      \
+            sprintf(m_verb_def_msg_, format, ##__VA_ARGS__);                                 \
+            fprintf(stdout, "[%d %s] %s\n", m_verb_def_rank_, header_name, m_verb_def_msg_); \
+        }
     })
 #else
 #define m_verb_def(header_name, format, ...) \
