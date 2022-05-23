@@ -1,41 +1,11 @@
-#ifndef H3LPR_SRC_MACROS_HPP_
-#define H3LPR_SRC_MACROS_HPP_
-
-#include <execinfo.h>
-#include <mpi.h>
-#include <omp.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <limits>
+#ifndef H3LPR_SRC_DEF_HPP_
+#define H3LPR_SRC_DEF_HPP_
 
 #ifndef NDEBUG
 #define M_DEBUG 1
 #else
 #define M_DEBUG 0
 #endif
-
-#ifdef NO_BTRACE
-#define M_BACKTRACE 0
-#else
-#define M_BACKTRACE 1
-#endif
-
-#define M_BACKTRACE_HISTORY 50
-
-//==============================================================================
-/**
- * @name logs and verbosity
- *
- */
-namespace H3LPR {
-extern short m_log_level_counter;
-extern char  m_log_level_prefix[32];
-
-// function used for backtrace logging
-void PrintBackTrace(const char name[]);
-};  // namespace H3LPR
 
 //==============================================================================
 #define M_ALIGNMENT 16  //!< memory alignement (in Byte, 16 = 2 doubles = 4 floats)
@@ -83,8 +53,6 @@ void PrintBackTrace(const char name[]);
         std::free(m_free_data_);            \
     })
 
-//==============================================================================
-// FLOAT/DOUBLE comparison
 //==============================================================================
 /**
  * @brief returns the max of two expressions
@@ -158,9 +126,6 @@ void PrintBackTrace(const char name[]);
 /** @} */
 
 //==============================================================================
-// LOGGING
-//==============================================================================
-
 #define m_log_level_plus                                                \
     ({                                                                  \
         H3LPR::m_log_level_counter += (H3LPR::m_log_level_counter < 5); \
@@ -181,14 +146,18 @@ void PrintBackTrace(const char name[]);
         }                                                               \
     })
 
+/**
+ * @brief void macro to be used for the log etc
+ */
+#define m_void(...) \
+    { ((void)0); }
+
 //------------------------------------------------------------------------------
 /**
- * @brief m_log will be displayed as a log, either by every rank or only by the master (given LOG_ALLRANKS)
+ * @brief m_log will be displayed as a log by
  *
  */
-#ifndef LOG_MUTE
-#ifndef LOG_ALLRANKS
-#define m_log_def(header_name, format, ...)                                                          \
+#define m_log_def_rank0(header_name, format, ...)                                                          \
     ({                                                                                               \
         int m_log_def_rank_;                                                                         \
         MPI_Comm_rank(MPI_COMM_WORLD, &m_log_def_rank_);                                             \
@@ -198,18 +167,19 @@ void PrintBackTrace(const char name[]);
             fprintf(stdout, "[%s] %s %s\n", header_name, H3LPR::m_log_level_prefix, m_log_def_msg_); \
         }                                                                                            \
     })
-#define m_log_noheader(format, ...)                              \
-    ({                                                           \
-        int m_log_noheader_rank_;                                \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_noheader_rank_);    \
-        if (m_log_noheader_rank_ == 0) {                         \
-            char m_log_noheader_msg_[1024];                      \
-            sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
-            fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
-        }                                                        \
+
+#define m_log_noheader_rank0(format, ...)                           \
+    ({                                                        \
+        int m_log_noheader_rank_;                             \
+        MPI_Comm_rank(MPI_COMM_WORLD, &m_log_noheader_rank_); \
+        char m_log_noheader_msg_[1024];                       \
+        sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__);  \
+        if (m_log_noheader_rank_ == 0) {                      \
+            fprintf(stdout, "%s\n", m_log_noheader_msg_);     \
+        }                                                     \
     })
-#else // LOG_ALLRANKS
-#define m_log_def(header_name, format, ...)                                                                          \
+
+#define m_log_def_rankall(header_name, format, ...)                                                                          \
     ({                                                                                                               \
         int m_log_def_rank_;                                                                                         \
         MPI_Comm_rank(MPI_COMM_WORLD, &m_log_def_rank_);                                                             \
@@ -217,38 +187,18 @@ void PrintBackTrace(const char name[]);
         sprintf(m_log_def_msg_, format, ##__VA_ARGS__);                                                              \
         fprintf(stdout, "[%d %s] %s %s\n", m_log_def_rank_, header_name, H3LPR::m_log_level_prefix, m_log_def_msg_); \
     })
-#define m_log_noheader(format, ...)                          \
+
+#define m_log_noheader_rankall(format, ...)                          \
     ({                                                       \
         char m_log_noheader_msg_[1024];                      \
         sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
         fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
     })
-#endif // LOG_ALLRANKS
-#else // LOG_MUTE
-#define m_log_def(header_name, format, ...) \
-    { ((void)0); }
-#define m_log_def_noheader(format, ...) \
-    { ((void)0); }
-#endif //LOG_MUTE
 
-//------------------------------------------------------------------------------
 /**
  * @brief m_verb will be displayed if VERBOSE is enabled
  *
  */
-#ifdef VERBOSE
-#ifndef LOG_ALLRANKS
-#define m_verb_def(header_name, format, ...)                            \
-    ({                                                                  \
-        int m_verb_def_rank_;                                           \
-        MPI_Comm_rank(MPI_COMM_WORLD, &m_verb_def_rank_);               \
-        if (m_verb_def_rank_ == 0) {                                    \
-            char m_verb_def_msg_[1024];                                 \
-            sprintf(m_verb_def_msg_, format, ##__VA_ARGS__);            \
-            fprintf(stdout, "[%s] %s\n", header_name, m_verb_def_msg_); \
-        }                                                               \
-    })
-#else // LOG_ALLRANKS
 #define m_verb_def(header_name, format, ...)                                             \
     ({                                                                                   \
         int m_verb_def_rank_;                                                            \
@@ -257,81 +207,38 @@ void PrintBackTrace(const char name[]);
         sprintf(m_verb_def_msg_, format, ##__VA_ARGS__);                                 \
         fprintf(stdout, "[%d %s] %s\n", m_verb_def_rank_, header_name, m_verb_def_msg_); \
     })
-#endif // LOG_ALLRANKS
-#else // VERBOSE
-#define m_verb_def(header_name, format, ...) \
-    { ((void)0); }
-#endif // VERBOSE
 
-//------------------------------------------------------------------------------
 /**
- * @brief m_assert defines the assertion call, disabled if NDEBUG is asked
+ * @brief m_assert defines the assertion call, disable if NDEBUG is asked
  *
  */
-#ifdef NDEBUG
-#define m_assert_def(cond, ...) \
-    { ((void)0); }
-#else
 #define m_assert_def(header_name, cond, ...)                                                                                                               \
-    ({                                                                                                                                                     \
-        bool m_assert_def_cond_ = (bool)(cond);                                                                                                            \
-        if (!(m_assert_def_cond_)) {                                                                                                                       \
-            char m_assert_def_msg_[1024];                                                                                                                  \
-            int  m_assert_def_rank_;                                                                                                                       \
-            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                                            \
-            sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                                       \
+    ({                                                                                                                                    \
+        bool m_assert_def_cond_ = (bool)(cond);                                                                                               \
+        if (!(m_assert_def_cond_)) {                                                                                                          \
+            char m_assert_def_msg_[1024];                                                                                                     \
+            int  m_assert_def_rank_;                                                                                                          \
+            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                               \
+            sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                          \
             fprintf(stdout, "[%d %s-assert] '%s' FAILED: %s (at %s:%d)\n", m_assert_def_rank_, header_name, #cond, m_assert_def_msg_, __FILE__, __LINE__); \
-            H3LPR::PrintBackTrace(header_name);                                                                                                                       \
-            fflush(stdout);                                                                                                                                \
-            MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                                     \
-        }                                                                                                                                                  \
+            fflush(stdout);                                                                                                               \
+            MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                    \
+        }                                                                                                                                 \
     })
-#endif
 
-//------------------------------------------------------------------------------
 /**
- * @brief entry and exit of functions, enabled if VERBOSE is enabled
+ * @brief entry and exit of functions
  *
  */
-#ifdef VERBOSE
 #define m_begin_def(header_name)                                                                             \
     m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_begin_def_T0 = MPI_Wtime();                                                                     \
+    double m_begin_def_T0 = MPI_Wtime();                                                        \
     m_verb_def(header_name, "----- entering %s", __func__);
+
 #define m_end_def(header_name)                                                                               \
     m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_end_def_T1_ = MPI_Wtime();                                                                      \
+    double m_end_def_T1_ = MPI_Wtime();                                                         \
     m_verb_def(header_name, "----- leaving %s after %lf [s]", __func__, (m_end_def_T1_) - (m_begin_def_T0));
-#else
-#define m_begin_def(header_name) \
-    { ((void)0); }
-#define m_end_def(header_name) \
-    { ((void)0); }
-#endif
-/** @} */
 
-//==============================================================================
-// H3LPR specific logging
-//==============================================================================
 
-#define m_log_h3lpr(format, ...)                   \
-    ({                                             \
-        m_log_def("h3lpr", format, ##__VA_ARGS__); \
-    })
-
-#define m_verb_h3lpr(format, ...)                   \
-    ({                                              \
-        m_verb_def("h3lpr", format, ##__VA_ARGS__); \
-    })
-
-#define m_assert_h3lpr(format, ...)                   \
-    ({                                                \
-        m_assert_def("h3lpr", format, ##__VA_ARGS__); \
-    })
-
-#define m_begin_h3lpr \
-    { (m_begin_def("h3lpr")); }
-#define m_end_h3lpr \
-    { (m_end_def("h3lpr")); }
-
-#endif  // H3LPR_SRC_MACROS_HPP_
+#endif //H3LPR_SRC_DEF_HPP_
