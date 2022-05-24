@@ -2,7 +2,7 @@ CXX = mpic++
 CC = mpicc
 
 CXXFLAGS := -O3 -g -fopenmp
-LDFLAGS := -fopenmp -lstdc++ -lm
+LDFLAGS := -fopenmp -lstdc++ -lm -rdynamic -ldl
 
 HDF5_INC := /usr/local/hdf5/include
 HDF5_LIB := /usr/local/hdf5/lib

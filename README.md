@@ -74,12 +74,12 @@ The file is given to the parser as `--config=filename`. The syntax would then be
 
 ### Logging
 
-The log is be used to print message in the output of the code. There are different ways of using it. 
+The log is be used to print message in the output of the code with 3 flavors There are different ways of using it. 
 The basic usage is the following
 
 ```c++
 double pi = 3.1415;
-m_log_h3lpr("pi is equal to %e", pi);
+m_log_def("pi is equal to %e", pi);
 ```
 
 The output looks like: 
@@ -100,3 +100,21 @@ To have a personalised header, we encourage you to define a macro in your code t
     })
 ```
 To perform a run without any log, you can compile the librairy with the `-DLOG_MUTE` flag.
+
+
+### asserts
+
+The assert macros is defined similarly to the log-one: `m_assert_def`.
+The macro is disabled if the the file that includes the header is compiled with `-DNDEBUG`.
+If not, then the backtrace is printed right after the assertion message, unless disabled using `-DNO_BTRACE`.
+
+:warning: to ensure a readable naming information, we need the linker to have the following flags `-rdynamic -ldl`.
+
+To use a personalized assertion, follow the same strategy as for the `m_log_def`:
+
+```c++
+#define m_assert_h3lpr(format, ...)                   \
+    ({                                                \
+        m_assert_def("h3lpr", format, ##__VA_ARGS__); \
+    })
+```

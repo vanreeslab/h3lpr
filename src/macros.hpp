@@ -16,6 +16,14 @@
 #define M_DEBUG 0
 #endif
 
+#ifdef NO_BTRACE
+#define M_BACKTRACE 0
+#else
+#define M_BACKTRACE 1
+#endif
+
+#define M_BACKTRACE_HISTORY 50
+
 //==============================================================================
 /**
  * @name logs and verbosity
@@ -24,6 +32,9 @@
 namespace H3LPR {
 extern short m_log_level_counter;
 extern char  m_log_level_prefix[32];
+
+// function used for backtrace logging
+void PrintBackTrace(const char name[]);
 };  // namespace H3LPR
 
 //==============================================================================
@@ -72,6 +83,8 @@ extern char  m_log_level_prefix[32];
         std::free(m_free_data_);            \
     })
 
+//==============================================================================
+// FLOAT/DOUBLE comparison
 //==============================================================================
 /**
  * @brief returns the max of two expressions
@@ -145,6 +158,9 @@ extern char  m_log_level_prefix[32];
 /** @} */
 
 //==============================================================================
+// LOGGING
+//==============================================================================
+
 #define m_log_level_plus                                                \
     ({                                                                  \
         H3LPR::m_log_level_counter += (H3LPR::m_log_level_counter < 5); \
@@ -215,6 +231,7 @@ extern char  m_log_level_prefix[32];
     { ((void)0); }
 #endif //LOG_MUTE
 
+//------------------------------------------------------------------------------
 /**
  * @brief m_verb will be displayed if VERBOSE is enabled
  *
@@ -246,8 +263,9 @@ extern char  m_log_level_prefix[32];
     { ((void)0); }
 #endif // VERBOSE
 
+//------------------------------------------------------------------------------
 /**
- * @brief m_assert defines the assertion call, disable if NDEBUG is asked
+ * @brief m_assert defines the assertion call, disabled if NDEBUG is asked
  *
  */
 #ifdef NDEBUG
@@ -255,20 +273,22 @@ extern char  m_log_level_prefix[32];
     { ((void)0); }
 #else
 #define m_assert_def(header_name, cond, ...)                                                                                                               \
-    ({                                                                                                                                    \
-        bool m_assert_def_cond_ = (bool)(cond);                                                                                               \
-        if (!(m_assert_def_cond_)) {                                                                                                          \
-            char m_assert_def_msg_[1024];                                                                                                     \
-            int  m_assert_def_rank_;                                                                                                          \
-            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                               \
-            sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                          \
+    ({                                                                                                                                                     \
+        bool m_assert_def_cond_ = (bool)(cond);                                                                                                            \
+        if (!(m_assert_def_cond_)) {                                                                                                                       \
+            char m_assert_def_msg_[1024];                                                                                                                  \
+            int  m_assert_def_rank_;                                                                                                                       \
+            MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                                            \
+            sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                                       \
             fprintf(stdout, "[%d %s-assert] '%s' FAILED: %s (at %s:%d)\n", m_assert_def_rank_, header_name, #cond, m_assert_def_msg_, __FILE__, __LINE__); \
-            fflush(stdout);                                                                                                               \
-            MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                    \
-        }                                                                                                                                 \
+            H3LPR::PrintBackTrace(header_name);                                                                                                                       \
+            fflush(stdout);                                                                                                                                \
+            MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                                     \
+        }                                                                                                                                                  \
     })
 #endif
 
+//------------------------------------------------------------------------------
 /**
  * @brief entry and exit of functions, enabled if VERBOSE is enabled
  *
@@ -276,11 +296,11 @@ extern char  m_log_level_prefix[32];
 #ifdef VERBOSE
 #define m_begin_def(header_name)                                                                             \
     m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_begin_def_T0 = MPI_Wtime();                                                        \
+    double m_begin_def_T0 = MPI_Wtime();                                                                     \
     m_verb_def(header_name, "----- entering %s", __func__);
 #define m_end_def(header_name)                                                                               \
     m_assert_def(header_name, omp_get_num_threads() == 1, "no MPI is allowed in an openmp parallel region"); \
-    double m_end_def_T1_ = MPI_Wtime();                                                         \
+    double m_end_def_T1_ = MPI_Wtime();                                                                      \
     m_verb_def(header_name, "----- leaving %s after %lf [s]", __func__, (m_end_def_T1_) - (m_begin_def_T0));
 #else
 #define m_begin_def(header_name) \
@@ -289,6 +309,10 @@ extern char  m_log_level_prefix[32];
     { ((void)0); }
 #endif
 /** @} */
+
+//==============================================================================
+// H3LPR specific logging
+//==============================================================================
 
 #define m_log_h3lpr(format, ...)                   \
     ({                                             \
