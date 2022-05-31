@@ -89,13 +89,40 @@ void TimerBlock::Start() {
     t0_ = MPI_Wtime();
 }
 
+// /**
+//  * @brief start the timer using the time provided as argument
+//  * 
+//  */
+// void TimerBlock::Start(const double stop_time) {
+//     m_assert_h3lpr(t0_ < -0.5, "the block %s has already been started", name_.c_str());
+//     count_ += 1;
+//     t0_ = stop_time;
+// }
+
+// /**
+//  * @brief stop the timer using MPI_Wtime
+//  * 
+//  */
+// void TimerBlock::Stop() {
+//     // get the time
+//     t1_ = MPI_Wtime();
+//     // 
+//     m_assert_h3lpr(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
+//     // store it
+//     double dt = t1_ - t0_;
+//     time_acc_ = time_acc_ + dt;
+//     // reset to negative for the checks
+//     t0_ = -1.0;
+//     t1_ = -1.0;
+// }
+
 /**
- * @brief stop the timer using MPI_Wtime
+ * @brief stop the timer using the time provided as argument
  * 
  */
-void TimerBlock::Stop() {
+void TimerBlock::Stop(const double time) {
     // get the time
-    t1_ = MPI_Wtime();
+    t1_ = time;
     // 
     m_assert_h3lpr(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
     // store it
@@ -122,6 +149,18 @@ TimerBlock* TimerBlock::AddChild(string child_name) noexcept {
     } else {
         return it->second;
     }
+}
+
+/**
+ * @brief returns the time of the requested children
+ * 
+ * @param child_name 
+ * @return double 
+ */
+double TimerBlock::GetChildrenTime(string child_name) noexcept{
+    auto it = children_.find(child_name);
+    m_assert_h3lpr(it != children_.end(),"you requested the time of %s which is not a child",child_name.c_str());
+    return it->second->time_acc();
 }
 
 /**
@@ -314,7 +353,7 @@ Profiler::~Profiler() {
 }
 
 /**
- * @brief initialize the timer and move to it
+ * @brief initialize the timer and move to it + return the TimerBlock adress
  */
 void Profiler::Init(string name)  noexcept{
     current_ = current_->AddChild(name);
@@ -328,11 +367,11 @@ void Profiler::Start(string name) noexcept {
 }
 
 /**
- * @brief stop the timer of the TimerBlock
+ * @brief stop the timer of the TimerBlock using the given walltime
  */
-void Profiler::Stop(string name) noexcept {
+void Profiler::Stop(string name, const double wtime) noexcept {
     m_assert_h3lpr(name == current_->name(), "we are trying to stop %s which is not the most recent timer started = %s", name.c_str(), current_->name().c_str());
-    current_->Stop();
+    current_->Stop(wtime);
 }
 
 /**
@@ -340,6 +379,15 @@ void Profiler::Stop(string name) noexcept {
  */
 void Profiler::Leave(string name)noexcept  {
     current_ = current_->parent();
+}
+
+/**
+ * @brief returns the elapsed time for one of the children only
+ *
+ * @param name
+ */
+double Profiler::GetTime(string name) noexcept {
+    return current_->GetChildrenTime(name);
 }
 
 /**

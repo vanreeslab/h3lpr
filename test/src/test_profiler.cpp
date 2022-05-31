@@ -15,6 +15,89 @@ class TestProf : public ::testing::Test {
 
 #define size 1729 * 1729
 
+TEST_F(TestProf, latency) {
+    {
+        m_log_h3lpr("clock resolution = %e", MPI_Wtick());
+        double tstart = MPI_Wtime();
+        for (int i = 0; i < 1729; ++i) {
+            MPI_Wtime();
+        }
+        double tfinal = MPI_Wtime() - tstart;
+        m_log_h3lpr("time to call MPI_Wtime() = %e", tfinal / 1729.0);
+    }
+    {
+        Profiler prof("loop latency");
+
+        double x = 0.0;
+
+        double tstart = MPI_Wtime();
+        m_profStart(&prof, "latency");
+        double tstart_inner = MPI_Wtime();
+        for (int i = 0; i < 1729; ++i) {
+            x += (i % 2) ? sin(2.0 * i) : cos(2.0 * i);
+        }
+        double tfinal_inner = MPI_Wtime() - tstart_inner;
+        m_profStop(&prof, "latency");
+        double tfinal = MPI_Wtime() - tstart;
+
+        double tprof   = prof.GetTime("latency");
+        double t_inner = tfinal_inner;
+        double t_outer = tfinal;
+        m_log_h3lpr("it took %e to measure %e seconds that are actually only %e seconds => measurement accuracy = %e", t_outer, tprof, t_inner, fabs(tprof - t_inner));
+    }
+    // {
+    //     Profiler prof("loop latency");
+
+    //     double x      = 0.0;
+    //     double tstart = MPI_Wtime();
+    //     for (int i = 0; i < 100; ++i) {
+    //         m_profStart(&prof, "latency");
+    //         x += (i % 2) ? sin(2.0 * i) : cos(2.0 * i);
+    //         m_profStop(&prof, "latency");
+    //     }
+    //     double tfinal  = MPI_Wtime() - tstart;
+    //     double tprof   = prof.GetTime("latency");
+    //     double latency = tfinal - tprof;
+    //     m_log_h3lpr("latency inside loop = %e = %e - %e", latency, tfinal, tprof);
+    // }
+    // {
+    //     Profiler prof("loop latency");
+
+    //     double x      = 0.0;
+    //     double tstart = MPI_Wtime();
+    //     m_profStart(&prof, "latency");
+    //     for (int i = 0; i < 100; ++i) {
+    //         x += (i % 2) ? sin(2.0 * i) : cos(2.0 * i);
+    //     }
+    //     m_profStop(&prof, "latency");
+    //     double tfinal  = MPI_Wtime() - tstart;
+    //     double tprof   = prof.GetTime("latency");
+    //     double latency = tfinal - tprof;
+    //     m_log_h3lpr("latency outside loop = %e = %e - %e", latency, tfinal, tprof);
+    // }
+    // {
+    //     Profiler prof("loop latency");
+
+    //     double x      = 0.0;
+    //     m_profInit(&prof, "latency");
+        
+    //     double tstart = MPI_Wtime();
+    //     m_profStartRepeat(&prof,"latency");
+    //     for (int i = 0; i < 100; ++i) {
+            
+    //         x += (i % 2) ? sin(2.0 * i) : cos(2.0 * i);
+            
+    //     }
+    //     m_profStopRepeat(&prof,"latency");
+    //     double tfinal  = MPI_Wtime() - tstart;
+        
+    //     m_profLeave(&prof, "latency");
+    //     double tprof   = prof.GetTime("latency");
+    //     double latency =  tprof - tfinal;
+    //     m_log_h3lpr("latency repeat loop = %e = %e - %e", latency, tfinal, tprof);
+    // }
+}
+
 TEST_F(TestProf, prof) {
     Profiler prof("loop strategies");
     // alloc a random memory
