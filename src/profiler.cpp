@@ -275,13 +275,13 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
 #endif
             // printf in the file
             if (file != nullptr) {
-                fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, mean_count, min_time, max_time, min_count, max_count);
+                fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, mean_count, min_time, max_time, std_time, min_count, max_count);
             }
         }
     } else if (name_ != "root") {
         // we have a total count = 0, nothing to do for the counter
         if ((rank == 0) && (file != nullptr)) {
-            fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
     }
 
