@@ -22,6 +22,8 @@ TEST_F(TestMacros, alloc) {
         a_algn[i] = i * i;
     }
 
+    // m_assert_h3lpr(false,"this is a test");
+
     m_free(a);
 }
 

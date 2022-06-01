@@ -18,6 +18,7 @@ class TestParser : public ::testing::Test {
 TEST_F(TestParser, help) {
     const int   argc   = 3;
     const char* msg[3] = {"./h3lpr", "--help", "--mandatory-param=0.1"};
+    // const char* msg[3] = {"./h3lpr", "--help", "--other"};
 
     // create the parser
     Parser parser(argc, msg);

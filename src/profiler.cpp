@@ -89,13 +89,40 @@ void TimerBlock::Start() {
     t0_ = MPI_Wtime();
 }
 
+// /**
+//  * @brief start the timer using the time provided as argument
+//  * 
+//  */
+// void TimerBlock::Start(const double stop_time) {
+//     m_assert_h3lpr(t0_ < -0.5, "the block %s has already been started", name_.c_str());
+//     count_ += 1;
+//     t0_ = stop_time;
+// }
+
+// /**
+//  * @brief stop the timer using MPI_Wtime
+//  * 
+//  */
+// void TimerBlock::Stop() {
+//     // get the time
+//     t1_ = MPI_Wtime();
+//     // 
+//     m_assert_h3lpr(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
+//     // store it
+//     double dt = t1_ - t0_;
+//     time_acc_ = time_acc_ + dt;
+//     // reset to negative for the checks
+//     t0_ = -1.0;
+//     t1_ = -1.0;
+// }
+
 /**
- * @brief stop the timer using MPI_Wtime
+ * @brief stop the timer using the time provided as argument
  * 
  */
-void TimerBlock::Stop() {
+void TimerBlock::Stop(const double time) {
     // get the time
-    t1_ = MPI_Wtime();
+    t1_ = time;
     // 
     m_assert_h3lpr(t0_ > -0.5, "the block %s is stopped without being started", name_.c_str());
     // store it
@@ -122,6 +149,18 @@ TimerBlock* TimerBlock::AddChild(string child_name) noexcept {
     } else {
         return it->second;
     }
+}
+
+/**
+ * @brief returns the time of the requested children
+ * 
+ * @param child_name 
+ * @return double 
+ */
+double TimerBlock::GetChildrenTime(string child_name) noexcept{
+    auto it = children_.find(child_name);
+    m_assert_h3lpr(it != children_.end(),"you requested the time of %s which is not a child",child_name.c_str());
+    return it->second->time_acc();
 }
 
 /**
@@ -157,9 +196,9 @@ double TimerBlock::time_acc() const {
 /**
  * @brief display the time for the TimerBlock
  * 
- * @param file 
- * @param level 
- * @param total_time 
+ * @param file pointer to the file to write the results
+ * @param level the indentation level
+ * @param total_time the total time used to compute percentages
  */
 void TimerBlock::Disp(FILE* file, const int level, const double total_time, const int icol) const {
     // check if any proc has called the agent
@@ -193,17 +232,19 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     //................................................
     // compute my numbers
     if (total_count > 0) {
-        double scale = 1.0 / comm_size;
-
         // compute the counters (mean, max, min)
         double local_count = count_;
-        double max_count;
+        double max_count = 0.0, min_count = 0.0, mean_count = 0.0;
+        mean_count = total_count / comm_size;
+        MPI_Allreduce(&local_count, &min_count, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
         MPI_Allreduce(&local_count, &max_count, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         // compute times passed inside + children
         double local_time = time_acc_;
-        double sum_time;
+        double sum_time = 0.0, min_time = 0.0, max_time = 0.0;
         MPI_Allreduce(&local_time, &sum_time, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&local_time, &min_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(&local_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         double mean_time           = sum_time / comm_size;
         double mean_time_per_count = sum_time / total_count;
@@ -234,16 +275,13 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
 #endif
             // printf in the file
             if (file != nullptr) {
-                fprintf(file, "%s;%d;%.6f;%.6f;%.6f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, max_count);
+                fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, mean_count, min_time, max_time, std_time, min_count, max_count);
             }
         }
     } else if (name_ != "root") {
-        // printf the important information
-        if (rank == 0) {
-            //     printf("%-35.35s| %s\033[0m%09.6f\033[0m %% -> \033[0m%07.4f\033[0m [s] \t\t(mean/call %.4f [s], %.0f calls)\n", myname.c_str(), shifter.c_str(), 0.0, 0.0, 0.0, 0.0);
-            if (file != nullptr) {
-                fprintf(file, "%s\n", name_.c_str());
-            }
+        // we have a total count = 0, nothing to do for the counter
+        if ((rank == 0) && (file != nullptr)) {
+            fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
     }
 
@@ -262,8 +300,8 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     // recursive call to the childrens
     // get the colors
     string max_name, min_name;
-    double max_time = -1e+15;
-    double min_time = +1e+15;
+    double max_time = std::numeric_limits<double>::min();
+    double min_time = std::numeric_limits<double>::max();
     for (auto it = children_.cbegin(); it != children_.cend(); ++it) {
         TimerBlock* child = it->second;
         double      ctime = child->time_acc();
@@ -314,7 +352,7 @@ Profiler::~Profiler() {
 }
 
 /**
- * @brief initialize the timer and move to it
+ * @brief initialize the timer and move to it + return the TimerBlock adress
  */
 void Profiler::Init(string name)  noexcept{
     current_ = current_->AddChild(name);
@@ -328,11 +366,11 @@ void Profiler::Start(string name) noexcept {
 }
 
 /**
- * @brief stop the timer of the TimerBlock
+ * @brief stop the timer of the TimerBlock using the given walltime
  */
-void Profiler::Stop(string name) noexcept {
+void Profiler::Stop(string name, const double wtime) noexcept {
     m_assert_h3lpr(name == current_->name(), "we are trying to stop %s which is not the most recent timer started = %s", name.c_str(), current_->name().c_str());
-    current_->Stop();
+    current_->Stop(wtime);
 }
 
 /**
@@ -340,6 +378,15 @@ void Profiler::Stop(string name) noexcept {
  */
 void Profiler::Leave(string name)noexcept  {
     current_ = current_->parent();
+}
+
+/**
+ * @brief returns the elapsed time for one of the children only
+ *
+ * @param name
+ */
+double Profiler::GetTime(string name) noexcept {
+    return current_->GetChildrenTime(name);
 }
 
 /**
