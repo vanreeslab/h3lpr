@@ -197,7 +197,7 @@ class Profiler {
 #endif
 
 #if (M_NO_PROFILER)
-#define m_profDisp(prof, name) \
+#define m_profDisp(prof) \
     { ((void)0); }
 #else
 #define m_profDisp(prof)                                              \
