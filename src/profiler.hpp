@@ -41,8 +41,6 @@ class TimerBlock {
     ~TimerBlock();
 
     void Start();
-    // void Stop();
-    // void Start(const double time);
     void Stop(const double time);
 
     std::string name() const { return name_; }

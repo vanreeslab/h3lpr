@@ -196,9 +196,9 @@ double TimerBlock::time_acc() const {
 /**
  * @brief display the time for the TimerBlock
  * 
- * @param file 
- * @param level 
- * @param total_time 
+ * @param file pointer to the file to write the results
+ * @param level the indentation level
+ * @param total_time the total time used to compute percentages
  */
 void TimerBlock::Disp(FILE* file, const int level, const double total_time, const int icol) const {
     // check if any proc has called the agent
@@ -232,17 +232,19 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     //................................................
     // compute my numbers
     if (total_count > 0) {
-        double scale = 1.0 / comm_size;
-
         // compute the counters (mean, max, min)
         double local_count = count_;
-        double max_count;
+        double max_count = 0.0, min_count = 0.0, mean_count = 0.0;
+        mean_count = total_count / comm_size;
+        MPI_Allreduce(&local_count, &min_count, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
         MPI_Allreduce(&local_count, &max_count, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         // compute times passed inside + children
         double local_time = time_acc_;
-        double sum_time;
+        double sum_time = 0.0, min_time = 0.0, max_time = 0.0;
         MPI_Allreduce(&local_time, &sum_time, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&local_time, &min_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(&local_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         double mean_time           = sum_time / comm_size;
         double mean_time_per_count = sum_time / total_count;
@@ -273,16 +275,13 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
 #endif
             // printf in the file
             if (file != nullptr) {
-                fprintf(file, "%s;%d;%.6f;%.6f;%.6f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, max_count);
+                fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, mean_time, glob_percent, mean_time_per_count, mean_count, min_time, max_time, min_count, max_count);
             }
         }
     } else if (name_ != "root") {
-        // printf the important information
-        if (rank == 0) {
-            //     printf("%-35.35s| %s\033[0m%09.6f\033[0m %% -> \033[0m%07.4f\033[0m [s] \t\t(mean/call %.4f [s], %.0f calls)\n", myname.c_str(), shifter.c_str(), 0.0, 0.0, 0.0, 0.0);
-            if (file != nullptr) {
-                fprintf(file, "%s\n", name_.c_str());
-            }
+        // we have a total count = 0, nothing to do for the counter
+        if ((rank == 0) && (file != nullptr)) {
+            fprintf(file, "%s;%d;%.8f;%.8f;%.8f;%.0f;%.8f;%.8f;%.0f;%.0f\n", name_.c_str(), level, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
     }
 
@@ -301,8 +300,8 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
     // recursive call to the childrens
     // get the colors
     string max_name, min_name;
-    double max_time = -1e+15;
-    double min_time = +1e+15;
+    double max_time = std::numeric_limits<double>::min();
+    double min_time = std::numeric_limits<double>::max();
     for (auto it = children_.cbegin(); it != children_.cend(); ++it) {
         TimerBlock* child = it->second;
         double      ctime = child->time_acc();
