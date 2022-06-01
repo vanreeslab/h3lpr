@@ -10,6 +10,7 @@ The impact on runtime should be very limited during the execution as the MPI-bas
 When starting or ending a timer, only the function `MPI_Wtime()` is called.
 
 To get some fancy colors when compiling, add the option `-DCOLOR_PROF`.
+You can also disable all the profiling using the option `-DNO_PROF`.
 
 
 ```c++
@@ -19,10 +20,26 @@ m_profStart(&prof,"step");
 // do something
 m_profStart(&prof,"substep");
 // do something else, inside the something
-m_profEnd(&prof,"substep");
-m_profEnd(&prof,"step");
+m_profStop(&prof,"substep");
+m_profStop(&prof,"step");
 
 // here MPI calls will happen
+m_profDisp(&prof);
+```
+
+In some cases it might be handy to initialize a profiler region without spending time in it.
+This is for example the case when using multiple ranks and conditions:
+
+```c++
+Profiler prof;
+
+// prevent other ranks than 0 to not have the profiler entry
+m_profInitLeave(&prof,"step");
+if (rank ==0){
+    m_profStart(&prof,"step");
+    m_profStop(&prof,"step");
+}
+
 m_profDisp(&prof);
 ```
 
