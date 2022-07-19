@@ -62,7 +62,7 @@ void PrintBackTrace(const char name[]);
 //         m_assert_h3lpr(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
 //         (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
 //     })
-// 
+
 // //------------------------------------------------------------------------------
 // /** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
 // #define m_calloc(size)                                                                    \
@@ -74,7 +74,7 @@ void PrintBackTrace(const char name[]);
 //         std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                            \
 //         m_calloc_data_;                                                                   \
 //     })
-// 
+
 // //------------------------------------------------------------------------------
 // /** @brief frees the pointer allocated using @ref m_calloc() */
 // #define m_free(data)                        \
