@@ -1,7 +1,10 @@
 #include "gtest/gtest.h"
 #include "profiler.hpp"
+#include "ptr.hpp"
 
 using namespace H3LPR;
+
+
 
 class TestProf : public ::testing::Test {
     void SetUp() override {
@@ -105,10 +108,15 @@ TEST_F(TestProf, prof) {
         //----------------------------------------------------------------------
         m_profStart(&prof, "test-c");
         m_profStart(&prof, "alloc");
-        double* a = reinterpret_cast<double*>(m_calloc(sizeof(double) * size));
+        // double* a = reinterpret_cast<double*>(m_calloc(sizeof(double) * size));
+        // auto a_ptr = m_ptr<H3LPR_ALLOC_POSIX,double*,16>(size*sizeof(double));
+        m_ptr<H3LPR_ALLOC_POSIX,double*,16> a_ptr(size*sizeof(double));
+        double* a = a_ptr();
+
+        m_log_h3lpr("address is %p",a);
         m_profStop(&prof, "alloc");
 
-        m_assert_h3lpr(m_isaligned(a), "the pointer a must be aligned");
+        // m_assert_h3lpr(m_isaligned(a()), "the pointer a must be aligned");
 
         // normal loop, aligned memory
         m_profStart(&prof, "loop - no assumed aligned");
@@ -117,13 +125,13 @@ TEST_F(TestProf, prof) {
         }
         m_profStop(&prof, "loop - no assumed aligned");
 
-        // specify the alignement
-        double* a_algn = m_assume_aligned(a);
-        m_profStart(&prof, "loop - assumed aligned");
-        for (int i = 0; i < size; ++i) {
-            a_algn[i] = 2.3 * i;
-        }
-        m_profStop(&prof, "loop - assumed aligned");
+        // // specify the alignement
+        // double* a_algn = m_assume_aligned(a);
+        // m_profStart(&prof, "loop - assumed aligned");
+        // for (int i = 0; i < size; ++i) {
+        //     a_algn[i] = 2.3 * i;
+        // }
+        // m_profStop(&prof, "loop - assumed aligned");
 
         // lambda loop
         auto op = [&a](const int i) {
@@ -136,7 +144,8 @@ TEST_F(TestProf, prof) {
         m_profStop(&prof, "loop - lambda");
 
         m_profStart(&prof, "free");
-        m_free(a);
+        m_log_h3lpr("going to free %p",a_ptr());
+        a_ptr.free();
         m_profStop(&prof, "free");
         m_profStop(&prof, "test-c");
 

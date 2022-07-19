@@ -37,51 +37,51 @@ extern char  m_log_level_prefix[32];
 void PrintBackTrace(const char name[]);
 };  // namespace H3LPR
 
-//==============================================================================
-#define M_ALIGNMENT 16  //!< memory alignement (in Byte, 16 = 2 doubles = 4 floats)
+// //==============================================================================
+// #define M_ALIGNMENT 16  //!< memory alignement (in Byte, 16 = 2 doubles = 4 floats)
 
-//==============================================================================
+// //==============================================================================
 
-/** @brief insist more on the alignement */
-#define m_inline \
-    __attribute__((always_inline)) inline
+// /** @brief insist more on the alignement */
+// #define m_inline \
+//     __attribute__((always_inline)) inline
 
-//------------------------------------------------------------------------------
-/** @brief returns true if the memory is aligned */
-#define m_isaligned(a)                                  \
-    ({                                                  \
-        const void* m_isaligned_a_ = (void*)(a);        \
-        ((uintptr_t)m_isaligned_a_) % M_ALIGNMENT == 0; \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief returns true if the memory is aligned */
+// #define m_isaligned(a)                                  \
+//     ({                                                  \
+//         const void* m_isaligned_a_ = (void*)(a);        \
+//         ((uintptr_t)m_isaligned_a_) % M_ALIGNMENT == 0; \
+//     })
 
-//------------------------------------------------------------------------------
-/** @brief instruct the compiler that the memory is aligned */
-#define m_assume_aligned(a)                                                           \
-    ({                                                                                \
-        decltype(a) m_assume_aligned_a_ = (a);                                        \
-        m_assert_h3lpr(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
-        (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief instruct the compiler that the memory is aligned */
+// #define m_assume_aligned(a)                                                           \
+//     ({                                                                                \
+//         decltype(a) m_assume_aligned_a_ = (a);                                        \
+//         m_assert_h3lpr(m_isaligned(m_assume_aligned_a_), "data has to be aligned");         \
+//         (decltype(a))(__builtin_assume_aligned(m_assume_aligned_a_, M_ALIGNMENT, 0)); \
+//     })
 
-//------------------------------------------------------------------------------
-/** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
-#define m_calloc(size)                                                                    \
-    ({                                                                                    \
-        size_t m_calloc_size_        = (size_t)(size) + M_ALIGNMENT - 1;                  \
-        size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % M_ALIGNMENT); \
-        void*  m_calloc_data_;                                                            \
-        posix_memalign(&m_calloc_data_, M_ALIGNMENT, m_calloc_padded_size_);              \
-        std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                            \
-        m_calloc_data_;                                                                   \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
+// #define m_calloc(size)                                                                    \
+//     ({                                                                                    \
+//         size_t m_calloc_size_        = (size_t)(size) + M_ALIGNMENT - 1;                  \
+//         size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % M_ALIGNMENT); \
+//         void*  m_calloc_data_;                                                            \
+//         posix_memalign(&m_calloc_data_, M_ALIGNMENT, m_calloc_padded_size_);              \
+//         std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                            \
+//         m_calloc_data_;                                                                   \
+//     })
 
-//------------------------------------------------------------------------------
-/** @brief frees the pointer allocated using @ref m_calloc() */
-#define m_free(data)                        \
-    ({                                      \
-        void* m_free_data_ = (void*)(data); \
-        std::free(m_free_data_);            \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief frees the pointer allocated using @ref m_calloc() */
+// #define m_free(data)                        \
+//     ({                                      \
+//         void* m_free_data_ = (void*)(data); \
+//         std::free(m_free_data_);            \
+//     })
 
 //==============================================================================
 // FLOAT/DOUBLE comparison
