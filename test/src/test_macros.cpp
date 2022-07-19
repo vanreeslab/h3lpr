@@ -1,5 +1,10 @@
 #include "gtest/gtest.h"
 #include "macros.hpp"
+#include "ptr.hpp"
+
+using namespace H3LPR;
+
+#define ALIGNMENT 16
 
 class TestMacros : public ::testing::Test {
     void SetUp() override {
@@ -13,18 +18,31 @@ class TestMacros : public ::testing::Test {
 
 TEST_F(TestMacros, alloc) {
     // alloc a random memory
-    double* a = reinterpret_cast<double*>(m_calloc(sizeof(double) * 17));
+    {
+        auto    a_ptr = m_ptr<H3LPR_ALLOC_POSIX, double*, ALIGNMENT>(17 * sizeof(double));
+        double* a     = a_ptr();
 
-    m_assert_h3lpr(m_isaligned(a), "the pointer a must be aligned");
-    // get the aligned pointer
-    double* a_algn = m_assume_aligned(a);
-    for (int i = 0; i < 17; ++i) {
-        a_algn[i] = i * i;
+        m_assert_h3lpr(m_isaligned(a_ptr, ALIGNMENT), "the pointer a must be aligned");
+        // get the aligned pointer
+        double* a_algn = a;
+        for (int i = 0; i < 17; ++i) {
+            a_algn[i] = i * i;
+        }
+        a_ptr.free();
     }
+    {
+        auto    a_ptr = m_ptr<H3LPR_ALLOC_MPI, double*, ALIGNMENT>(17 * sizeof(double));
+        double* a     = a_ptr();
 
-    // m_assert_h3lpr(false,"this is a test");
-
-    m_free(a);
+        m_assert_h3lpr(m_isaligned(a_ptr, ALIGNMENT), "the pointer a must be aligned");
+        // get the aligned pointer
+        double* a_algn = a;
+        for (int i = 0; i < 17; ++i) {
+            a_algn[i] = i * i;
+        }
+        a_ptr.free();
+        
+    }
 }
 
 TEST_F(TestMacros, log) {
