@@ -31,25 +31,25 @@
         const void* m_isaligned_a_ = (void*)(a); \
         ((uintptr_t)m_isaligned_a_) % alg == 0;  \
     })
-//------------------------------------------------------------------------------
-/** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
-#define m_calloc(size, alg)                                                       \
-    ({                                                                            \
-        size_t m_calloc_size_        = (size_t)(size) + alg - 1;                  \
-        size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % alg); \
-        void*  m_calloc_data_;                                                    \
-        posix_memalign(&m_calloc_data_, alg, m_calloc_padded_size_);              \
-        std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                    \
-        m_calloc_data_;                                                           \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
+// #define m_calloc(size, alg)                                                       \
+//     ({                                                                            \
+//         size_t m_calloc_size_        = (size_t)(size) + alg - 1;                  \
+//         size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % alg); \
+//         void*  m_calloc_data_;                                                    \
+//         posix_memalign(&m_calloc_data_, alg, m_calloc_padded_size_);              \
+//         std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                    \
+//         m_calloc_data_;                                                           \
+//     })
 
-//------------------------------------------------------------------------------
-/** @brief frees the pointer allocated using @ref m_calloc() */
-#define m_free(data)                        \
-    ({                                      \
-        void* m_free_data_ = (void*)(data); \
-        std::free(m_free_data_);            \
-    })
+// //------------------------------------------------------------------------------
+// /** @brief frees the pointer allocated using @ref m_calloc() */
+// #define m_free(data)                        \
+//     ({                                      \
+//         void* m_free_data_ = (void*)(data); \
+//         std::free(m_free_data_);            \
+//     })
 
 //==============================================================================
 /**
