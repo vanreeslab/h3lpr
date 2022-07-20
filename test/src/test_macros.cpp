@@ -22,7 +22,7 @@ TEST_F(TestMacros, alloc) {
         auto    a_ptr = m_ptr<H3LPR_ALLOC_POSIX, double*, ALIGNMENT>(17 * sizeof(double));
         double* a     = a_ptr();
 
-        m_assert_h3lpr(m_isaligned(a_ptr, ALIGNMENT), "the pointer a must be aligned");
+        m_assert_h3lpr(m_isaligned(a_ptr(), ALIGNMENT), "the pointer a must be aligned");
         // get the aligned pointer
         double* a_algn = a;
         for (int i = 0; i < 17; ++i) {
@@ -34,7 +34,7 @@ TEST_F(TestMacros, alloc) {
         auto    a_ptr = m_ptr<H3LPR_ALLOC_MPI, double*, ALIGNMENT>(17 * sizeof(double));
         double* a     = a_ptr();
 
-        m_assert_h3lpr(m_isaligned(a_ptr, ALIGNMENT), "the pointer a must be aligned");
+        m_assert_h3lpr(m_isaligned(a_ptr(), ALIGNMENT), "the pointer a must be aligned");
         // get the aligned pointer
         double* a_algn = a;
         for (int i = 0; i < 17; ++i) {
