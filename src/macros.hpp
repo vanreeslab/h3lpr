@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <string>
 
 #ifndef NDEBUG
 #define M_DEBUG 1
@@ -31,26 +32,6 @@
         const void* m_isaligned_a_ = (void*)(a); \
         ((uintptr_t)m_isaligned_a_) % alg == 0;  \
     })
-// //------------------------------------------------------------------------------
-// /** @brief allocate a given size (in Byte) and set to 0 the array, the return pointer is aligned to M_ALIGMEMENT */
-// #define m_calloc(size, alg)                                                       \
-//     ({                                                                            \
-//         size_t m_calloc_size_        = (size_t)(size) + alg - 1;                  \
-//         size_t m_calloc_padded_size_ = (m_calloc_size_) - (m_calloc_size_ % alg); \
-//         void*  m_calloc_data_;                                                    \
-//         posix_memalign(&m_calloc_data_, alg, m_calloc_padded_size_);              \
-//         std::memset(m_calloc_data_, 0, m_calloc_padded_size_);                    \
-//         m_calloc_data_;                                                           \
-//     })
-
-// //------------------------------------------------------------------------------
-// /** @brief frees the pointer allocated using @ref m_calloc() */
-// #define m_free(data)                        \
-//     ({                                      \
-//         void* m_free_data_ = (void*)(data); \
-//         std::free(m_free_data_);            \
-//     })
-
 //==============================================================================
 /**
  * @name logs and verbosity
@@ -60,6 +41,8 @@ namespace H3LPR {
 extern short m_log_level_counter;
 extern char  m_log_level_prefix[32];
 
+// retun commit id
+std::string GetCommit();
 // function used for backtrace logging
 void PrintBackTrace(const char name[]);
 };  // namespace H3LPR
@@ -189,7 +172,7 @@ void PrintBackTrace(const char name[]);
             fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
         }                                                        \
     })
-#else // LOG_ALLRANKS
+#else  // LOG_ALLRANKS
 #define m_log_def(header_name, format, ...)                                                                          \
     ({                                                                                                               \
         int m_log_def_rank_;                                                                                         \
@@ -204,13 +187,13 @@ void PrintBackTrace(const char name[]);
         sprintf(m_log_noheader_msg_, format, ##__VA_ARGS__); \
         fprintf(stdout, "%s\n", m_log_noheader_msg_);        \
     })
-#endif // LOG_ALLRANKS
-#else // LOG_MUTE
+#endif  // LOG_ALLRANKS
+#else   // LOG_MUTE
 #define m_log_def(header_name, format, ...) \
     { ((void)0); }
 #define m_log_def_noheader(format, ...) \
     { ((void)0); }
-#endif //LOG_MUTE
+#endif  // LOG_MUTE
 
 //------------------------------------------------------------------------------
 /**
@@ -229,7 +212,7 @@ void PrintBackTrace(const char name[]);
             fprintf(stdout, "[%s] %s\n", header_name, m_verb_def_msg_); \
         }                                                               \
     })
-#else // LOG_ALLRANKS
+#else  // LOG_ALLRANKS
 #define m_verb_def(header_name, format, ...)                                             \
     ({                                                                                   \
         int m_verb_def_rank_;                                                            \
@@ -238,11 +221,11 @@ void PrintBackTrace(const char name[]);
         sprintf(m_verb_def_msg_, format, ##__VA_ARGS__);                                 \
         fprintf(stdout, "[%d %s] %s\n", m_verb_def_rank_, header_name, m_verb_def_msg_); \
     })
-#endif // LOG_ALLRANKS
-#else // VERBOSE
+#endif  // LOG_ALLRANKS
+#else   // VERBOSE
 #define m_verb_def(header_name, format, ...) \
     { ((void)0); }
-#endif // VERBOSE
+#endif  // VERBOSE
 
 //------------------------------------------------------------------------------
 /**
@@ -262,7 +245,7 @@ void PrintBackTrace(const char name[]);
             MPI_Comm_rank(MPI_COMM_WORLD, &m_assert_def_rank_);                                                                                            \
             sprintf(m_assert_def_msg_, __VA_ARGS__);                                                                                                       \
             fprintf(stdout, "[%d %s-assert] '%s' FAILED: %s (at %s:%d)\n", m_assert_def_rank_, header_name, #cond, m_assert_def_msg_, __FILE__, __LINE__); \
-            H3LPR::PrintBackTrace(header_name);                                                                                                                       \
+            H3LPR::PrintBackTrace(header_name);                                                                                                            \
             fflush(stdout);                                                                                                                                \
             MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ASSERT);                                                                                                     \
         }                                                                                                                                                  \

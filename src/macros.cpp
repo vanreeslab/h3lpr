@@ -1,11 +1,28 @@
 #include "macros.hpp"
-#include <dlfcn.h>     // for dladdr
-#include <cxxabi.h> 
+
+#include <cxxabi.h>
+#include <dlfcn.h>  // for dladdr
 
 // useful global variables for the log
 namespace H3LPR {
 short m_log_level_counter = 0;
 char  m_log_level_prefix[32];
+
+/**
+ * @brief returns the commit id of the current h3lpr lib
+ *
+ * @return std::string
+ */
+std::string GetCommit() {
+    //--------------------------------------------------------------------------
+    // register the current git commit for tracking purpose
+#ifdef GIT_COMMIT
+    return std::string(GIT_COMMIT);
+#else
+    return std::string("?");
+#endif
+    //--------------------------------------------------------------------------
+}
 
 /**
  * @brief prints the backtrace history
