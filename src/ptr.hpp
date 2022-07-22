@@ -30,6 +30,7 @@ class m_ptr<H3LPR_ALLOC_POSIX, T, ALG> {
 
     void calloc(const size_t size_byte) {
         //----------------------------------------------------------------------
+        // first get a multiple of the alignment as a size (in case we allocate back to back, unsure why though...)
         size_t size        = (size_t)(size_byte) + (ALG - 1);
         size_t padded_size = (size) - (size % ALG);
         posix_memalign(&ptr_, ALG, padded_size);
@@ -70,16 +71,21 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
      *
      * @param size_byte the memory size in byte
      */
-    void calloc(const MPI_Aint usr_size) {
+    void calloc(const MPI_Aint size_byte) {
         //----------------------------------------------------------------------
-        MPI_Aint size = (MPI_Aint)(usr_size) + ALG;
-        MPI_Alloc_mem(size, MPI_INFO_NULL, &ptr_);
-        std::memset(ptr_, 0, size);
+        // first get a multiple of the alignment as a size (in case we allocate back to back, unsure why though...)
+        size_t size        = (size_t)(size_byte) + (ALG - 1);
+        size_t padded_size = (size) - (size % ALG);
+        // add 1 x the alginment in case the allocation is not aligned
+        MPI_Aint alloc_size = (MPI_Aint)(padded_size + ALG);
+        MPI_Alloc_mem(alloc_size, MPI_INFO_NULL, &ptr_);
+        std::memset(ptr_, 0, alloc_size);
 
         // get the offset in byte, i.e. the address at which the memory is aligned
-        const uintptr_t ptr     = (uintptr_t)(ptr_);
-        const size_t    ptr_mod = (ptr % ALG);
-        offset_byte_            = (ptr_mod == 0) ? 0 : (ALG - ptr_mod);
+        const size_t ptr_mod = ((uintptr_t)(ptr_) % ALG);
+        offset_byte_         = (ptr_mod == 0) ? 0 : (ALG - ptr_mod);
+        m_assert_h3lpr(ptr_mod < ALG, "the modulo = %ld cannot be bigger than %d", ptr_mod, ALG);
+        m_assert_h3lpr(offset_byte_ < ALG, "the modulo = %ld cannot be bigger than %d", offset_byte_, ALG);
         //----------------------------------------------------------------------
     };
 
@@ -94,6 +100,8 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
     T operator()() const noexcept {
         //----------------------------------------------------------------------
         m_assert_h3lpr(ptr_ != nullptr, "The pointer shouldn't be nullptr here");
+        // return reinterpret_cast<T>(ptr_);
+        m_assert_h3lpr(offset_byte_ < ALG, "the modulo = %ld cannot be bigger than %d", offset_byte_, ALG);
         return reinterpret_cast<T>((uintptr_t)(ptr_) + offset_byte_);
         //----------------------------------------------------------------------
     };
