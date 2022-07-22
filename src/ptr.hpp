@@ -30,6 +30,7 @@ class m_ptr<H3LPR_ALLOC_POSIX, T, ALG> {
 
     void calloc(const size_t size_byte) {
         //----------------------------------------------------------------------
+        // first get a multiple of the alignment as a size (in case we allocate back to back, unsure why though...)
         size_t size        = (size_t)(size_byte) + (ALG - 1);
         size_t padded_size = (size) - (size % ALG);
         posix_memalign(&ptr_, ALG, padded_size);
@@ -72,19 +73,19 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
      */
     void calloc(const MPI_Aint size_byte) {
         //----------------------------------------------------------------------
-        size_t   size        = (size_t)(size_byte) + (ALG - 1);
-        size_t   padded_size = (size) - (size % ALG);
-        MPI_Aint alloc_size  = (MPI_Aint)(padded_size + ALG);
+        // first get a multiple of the alignment as a size (in case we allocate back to back, unsure why though...)
+        size_t size        = (size_t)(size_byte) + (ALG - 1);
+        size_t padded_size = (size) - (size % ALG);
+        // add 1 x the alginment in case the allocation is not aligned
+        MPI_Aint alloc_size = (MPI_Aint)(padded_size + ALG);
         MPI_Alloc_mem(alloc_size, MPI_INFO_NULL, &ptr_);
         std::memset(ptr_, 0, alloc_size);
-        m_log_h3lpr("allocating %ld bytes", alloc_size);
 
         // get the offset in byte, i.e. the address at which the memory is aligned
         const size_t ptr_mod = ((uintptr_t)(ptr_) % ALG);
+        offset_byte_         = (ptr_mod == 0) ? 0 : (ALG - ptr_mod);
         m_assert_h3lpr(ptr_mod < ALG, "the modulo = %ld cannot be bigger than %d", ptr_mod, ALG);
-        offset_byte_ = (ptr_mod == 0) ? 0 : (ALG - ptr_mod);
         m_assert_h3lpr(offset_byte_ < ALG, "the modulo = %ld cannot be bigger than %d", offset_byte_, ALG);
-        m_log_h3lpr("offset = %ld", offset_byte_);
         //----------------------------------------------------------------------
     };
 
