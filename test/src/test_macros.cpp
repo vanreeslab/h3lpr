@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "macros.hpp"
 #include "ptr.hpp"
+#include <cmath>
 
 using namespace H3LPR;
 
@@ -26,6 +27,7 @@ TEST_F(TestMacros, alloc) {
         // get the aligned pointer
         double* a_algn = a;
         for (int i = 0; i < 17; ++i) {
+            m_assert_h3lpr(!std::isnan(a_algn[i]),"the value in %d cannot be nan: %f",i,a_algn[i]);
             a_algn[i] = i * i;
         }
         a_ptr.free();
@@ -38,6 +40,7 @@ TEST_F(TestMacros, alloc) {
         // get the aligned pointer
         double* a_algn = a;
         for (int i = 0; i < 17; ++i) {
+            m_assert_h3lpr(!std::isnan(a_algn[i]),"the value in %d cannot be nan: %f",i,a_algn[i]);
             a_algn[i] = i * i;
         }
         a_ptr.free();

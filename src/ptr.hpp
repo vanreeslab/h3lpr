@@ -74,6 +74,7 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
         //----------------------------------------------------------------------
         MPI_Aint size = (MPI_Aint)(usr_size) + ALG;
         MPI_Alloc_mem(size, MPI_INFO_NULL, &ptr_);
+        std::memset(ptr_, 0, size);
 
         // get the offset in byte, i.e. the address at which the memory is aligned
         const uintptr_t ptr     = (uintptr_t)(ptr_);
