@@ -80,6 +80,7 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
         const uintptr_t ptr     = (uintptr_t)(ptr_);
         const size_t    ptr_mod = (ptr % ALG);
         offset_byte_            = (ptr_mod == 0) ? 0 : (ALG - ptr_mod);
+        m_log_h3lpr("offset = %d");
         //----------------------------------------------------------------------
     };
 
@@ -94,7 +95,8 @@ class m_ptr<H3LPR_ALLOC_MPI, T, ALG> {
     T operator()() const noexcept {
         //----------------------------------------------------------------------
         m_assert_h3lpr(ptr_ != nullptr, "The pointer shouldn't be nullptr here");
-        return reinterpret_cast<T>((uintptr_t)(ptr_) + offset_byte_);
+        return reinterpret_cast<T>(ptr_);
+        // return reinterpret_cast<T>((uintptr_t)(ptr_) + offset_byte_);
         //----------------------------------------------------------------------
     };
 };
