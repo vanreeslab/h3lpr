@@ -361,6 +361,14 @@ Profiler::Profiler(const string myname) : name_(myname) {
  * @brief Destroy the Prof
  */
 Profiler::~Profiler() {
+    if (current_ != root_) {
+        std::string remaining_blocks = "";
+        while(current_->parent() != nullptr) {
+            remaining_blocks += current_->name() + ", ";
+            current_ = current_->parent();
+        }
+        m_log_h3lpr("WARNING: destroying profiler, but not all timers were stopped (remaining: %s)", remaining_blocks.c_str());
+    }
     delete root_;
 }
 
@@ -408,6 +416,7 @@ double Profiler::GetTime(string name) noexcept {
 void Profiler::Disp() {
     // record current time
     const double wtime = MPI_Wtime();
+    const bool root_call = (current_ == root_);
 
     int comm_size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
@@ -427,12 +436,17 @@ void Profiler::Disp() {
 
     // Save current state, stop all running blocks, and retrieve the root
     std::stack<TimerBlock*> call_stack;
+    std::string stopped_string = "";
     while (current_->parent() != nullptr) {
         current_->Stop(wtime);
         call_stack.push(current_);
+        stopped_string += current_->name() + ", ";
         current_ = current_->parent();
     }
     m_assert_h3lpr(current_ == root_, "Current block should be the root block.");
+    if (!root_call) {
+        m_log_h3lpr("WARNING: displaying profiler, but not all timers were stopped (remaining: %s)", stopped_string.c_str());
+    }
 
     // get the global timing
     double total_time = current_->time_acc();
