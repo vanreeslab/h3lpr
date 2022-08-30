@@ -1,6 +1,7 @@
 #include "profiler.hpp"
 
 #include <mpi.h>
+#include <stack>
 
 using std::map;
 using std::string;
@@ -86,6 +87,15 @@ TimerBlock::~TimerBlock() {
 void TimerBlock::Start() {
     m_assert_h3lpr(t0_ < -0.5, "the block %s has already been started", name_.c_str());
     count_ += 1;
+    t0_ = MPI_Wtime();
+}
+
+/**
+ * @brief start the timer without incrementing the call count
+ * 
+ */
+void TimerBlock::Resume() {
+    m_assert_h3lpr(t0_ < -0.5, "the block %s has already been started", name_.c_str());
     t0_ = MPI_Wtime();
 }
 
@@ -334,21 +344,32 @@ void TimerBlock::Disp(FILE* file, const int level, const double total_time, cons
  */
 Profiler::Profiler() : name_("default") {
     // create the current Timer Block "root"
-    current_ = new TimerBlock("root");
+    root_ = new TimerBlock("root");
+    current_ = root_;
 }
 
 /**
  * @brief Construct a new Prof with a given name
  */
 Profiler::Profiler(const string myname) : name_(myname) {
-    current_ = new TimerBlock("root");
+    // create the current Timer Block "root"
+    root_ = new TimerBlock("root");
+    current_ = root_;
 }
 
 /**
  * @brief Destroy the Prof
  */
 Profiler::~Profiler() {
-    delete current_;
+    if (current_ != root_) {
+        std::string remaining_blocks = "";
+        while(current_->parent() != nullptr) {
+            remaining_blocks += current_->name() + ", ";
+            current_ = current_->parent();
+        }
+        m_log_h3lpr("WARNING: destroying profiler, but not all timers were stopped (remaining: %s)", remaining_blocks.c_str());
+    }
+    delete root_;
 }
 
 /**
@@ -390,11 +411,13 @@ double Profiler::GetTime(string name) noexcept {
 }
 
 /**
- * @brief display the whole profiler using 
- * 
+ * @brief display the whole profiler
  */
-void Profiler::Disp() const {
-    m_assert_h3lpr(current_->name() == "root", "the current TimerBlock is not the root, please stop any current timer firsts");
+void Profiler::Disp() {
+    // record current time
+    const double wtime = MPI_Wtime();
+    const bool root_call = (current_ == root_);
+
     int comm_size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -409,6 +432,20 @@ void Profiler::Disp() const {
     string filename = "./prof/" + name_ + "_time.csv";
     if (rank == 0) {
         file = fopen(filename.c_str(), "w+");
+    }
+
+    // Save current state, stop all running blocks, and retrieve the root
+    std::stack<TimerBlock*> call_stack;
+    std::string stopped_string = "";
+    while (current_->parent() != nullptr) {
+        current_->Stop(wtime);
+        call_stack.push(current_);
+        stopped_string += current_->name() + ", ";
+        current_ = current_->parent();
+    }
+    m_assert_h3lpr(current_ == root_, "Current block should be the root block.");
+    if (!root_call) {
+        m_log_h3lpr("WARNING: displaying profiler, but not all timers were stopped (remaining: %s)", stopped_string.c_str());
     }
 
     // get the global timing
@@ -443,9 +480,17 @@ void Profiler::Disp() const {
         if (file != nullptr) {
             fclose(file);
         } else {
-            printf("unable to open file for profiling <%s>!", filename.c_str());
+            printf("unable to open file for profiling <%s>!\n", filename.c_str());
         }
     }
+
+    // Restart all the stopped blocks to restore the old state
+    while (!call_stack.empty()) {
+        current_ = call_stack.top();
+        current_->Resume();
+        call_stack.pop();
+    }
+    
     MPI_Barrier(MPI_COMM_WORLD);
 }
 

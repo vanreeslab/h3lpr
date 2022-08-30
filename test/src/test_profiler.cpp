@@ -167,3 +167,23 @@ TEST_F(TestProf, prof) {
 
     m_profDisp(&prof);
 }
+
+TEST_F(TestProf, display) {
+    Profiler prof("display");
+
+    m_profStart(&prof, "level 1");
+    m_profStart(&prof, "level 2");
+    m_profStart(&prof, "level 3");
+    m_profStop(&prof, "level 3");
+    
+    m_log_h3lpr("Displaying Profiler from level 2.");
+    m_profDisp(&prof);
+
+    m_profStop(&prof, "level 2");
+    m_log_h3lpr("Displaying Profiler from level 2.");
+    m_profDisp(&prof);
+
+    m_profStop(&prof, "level 1");
+    m_log_h3lpr("Displaying Profiler from top level.");
+    m_profDisp(&prof);
+}

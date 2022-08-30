@@ -49,6 +49,7 @@ class TimerBlock {
 
     void Start();
     void Stop(const double time);
+    void Resume();
 
     std::string name() const { return name_; }
     TimerBlock* parent() const { return parent_; }
@@ -73,6 +74,7 @@ class Profiler {
    protected:
     std::map<std::string, TimerBlock*> time_map_;
 
+    TimerBlock*       root_;     //!< this is a pointer to root TimerBlock
     TimerBlock*       current_;  //!< this is a pointer to the last TimerBlock
     const std::string name_;
 
@@ -88,7 +90,7 @@ class Profiler {
 
     double GetTime(std::string name) noexcept;
 
-    void Disp() const;
+    void Disp();
 };
 
 };  // namespace H3LPR
