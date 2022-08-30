@@ -445,9 +445,6 @@ void Profiler::Disp() {
 #else
         printf("        PROFILER %s --> total time = %.4f [s] \n\n", name_.c_str(), total_time);
 #endif
-        if (current_->name() != "root") {
-            printf(" *** Note: not all profiler blocks have stopped. This profile includes only stopped blocks. ***\n");
-        }
     }
 
     // display root with the total time, root is the only block which is common to everybody
