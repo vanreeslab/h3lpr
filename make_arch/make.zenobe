@@ -11,13 +11,5 @@ CXXFLAGS := -g -O3 -fopenmp -march=ivybridge -DMPI_NONASYNC # -DLOG_ALLRANKS #-D
 # -DVERBOSE 
 LDFLAGS := -fopenmp -lstdc++
 
-#PREFIX := ${HOME}/lib-OpenMPI-4.1.2-GCC-8.3.0
-PREFIX := ${HOME}/lib-OpenMPI-4.1.2rc3-GCC-8.3.0
-HDF5_INC := ${PREFIX}/include
-HDF5_LIB := ${PREFIX}/lib
-
-P4EST_INC := ${PREFIX}/include
-P4EST_LIB := ${PREFIX}/lib
-
 
 #eof

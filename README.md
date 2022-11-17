@@ -3,6 +3,24 @@
 Helper library for profiling, logging, and parsing.
 
 
+## Dependency
+
+- c++17 compiler
+- [Google Test](https://github.com/google/googletest): optional, only needed to compile the CI/CD testing
+
+## Build
+
+To build the `h3lpr` library (and install it in `PREFIX`):
+
+```bash
+ARCH_FILE=make_arch/make.yours PREFIX=/your/prefix make install
+
+# to build the tests (optional)
+ARCH_FILE=make_arch/make.yours make test
+```
+
+## Usage
+
 ### Profiler
 
 The profiler is used to insert timings from within the code.

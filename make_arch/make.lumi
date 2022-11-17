@@ -7,16 +7,6 @@ CC = cc
 CXXFLAGS := -g -Ofast -flto -DNDEBUG
 LDFLAGS := -fopenmp  #-fsanitize=undefined -fsanitize=address
 
-#FFTW_INC := ${EBROOTFFTW}/include
-#FFTW_LIB := ${EBROOTFFTW}/lib
-
-HDF5_INC := ${CRAY_HDF5_PARALLEL_PREFIX}/include
-HDF5_LIB := ${CRAY_HDF5_PARALLEL_PREFIX}/lib
-
-P4EST_INC := /users/thgillis/lib-cray-8.0.0-mpich-ucx-8.1.8/include
-P4EST_LIB := /users/thgillis/lib-cray-8.0.0-mpich-ucx-8.1.8/lib
-#P4EST_INC := /users/thgillis/lib-cray-8.0.0/include
-#P4EST_LIB := /users/thgillis/lib-cray-8.0.0/lib
 
 #end of file
 

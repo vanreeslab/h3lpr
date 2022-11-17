@@ -11,14 +11,3 @@ CXXFLAGS := -g -O3 -mtune=skylake -fopenmp -DLOG_ALLRANKS -DNDEBUG\
 # -DVERBOSE 
 LDFLAGS := -fopenmp -lstdc++ -lm
 
-FFTW_INC := ${EBROOTFFTW}/include
-FFTW_LIB := ${EBROOTFFTW}/lib
-
-HDF5_INC := ${HDF5_DIR}/include
-HDF5_LIB := ${HDF5_DIR}/lib
-
-P4EST_INC := /home/ucl/tfl/tgillis/p4est-lib/include
-P4EST_LIB := /home/ucl/tfl/tgillis/p4est-lib/lib
-
-FLUPS_INC := /home/ucl/tfl/tgillis/flups-lib/include
-FLUPS_LIB := /home/ucl/tfl/tgillis/flups-lib/lib
