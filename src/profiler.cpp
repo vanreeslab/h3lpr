@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Massachusetts Institute of Technology
+ *
+ * See LICENSE in top-level directory
+ */
 #include "profiler.hpp"
 
 #include <mpi.h>

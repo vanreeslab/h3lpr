@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Massachusetts Institute of Technology
+ *
+ * See LICENSE in top-level directory
+ */
 #include "parser.hpp"
 
 using string = std::string;
