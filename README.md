@@ -3,9 +3,9 @@
 Helper library for profiling, logging, and parsing.
 
 
-## Dependency
+## Dependencies
 
-- c++17 compiler
+- c++17 compiler (`clang` or others)
 - [Google Test](https://github.com/google/googletest): optional, only needed to compile the CI/CD testing
 
 ## Build
