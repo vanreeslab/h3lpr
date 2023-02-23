@@ -17,6 +17,8 @@ endif
 
 ################################################################################
 # FROM HERE, DO NOT CHANGE
+UNAME := $(shell uname)
+
 #-------------------------------------------------------------------------------
 PREFIX ?= ./
 NAME := h3lpr
@@ -114,7 +116,7 @@ all: lib_dynamic lib_static compdb
 
 #-------------------------------------------------------------------------------
 .PHONY: lib_dynamic
-lib_dynamic: $(TARGET).so
+lib_dynamic: $(TARGET).so $(TARGET).dylib
 
 .PHONY: lib_static
 lib_static: $(TARGET).a
@@ -122,6 +124,12 @@ lib_static: $(TARGET).a
 # the main target
 $(TARGET).so: $(OBJ)
 	$(CXX) -shared $(LDFLAGS) $^ $(LIB) -o $@
+
+# generate the .dylib only on darwin systems
+$(TARGET).dylib: $(OBJ)
+ifeq ($(UNAME), Darwin)
+	$(CXX) -dynamiclib $(LDFLAGS) -install_name $(PREFIX)/lib/lib$@ $^ $(LIB) -o $@
+endif
 
 $(TARGET).a: $(OBJ)
 	ar rvs $@ $^
@@ -152,6 +160,9 @@ install: info lib_dynamic lib_static | install_dir
 	$(call copy_list,$(HEAD),$(PREFIX)/include/${NAME})
 	$(call mv_list,$(TARGET).a,$(PREFIX)/lib/lib$(TARGET).a)
 	$(call mv_list,$(TARGET).so,$(PREFIX)/lib/lib$(TARGET).so)
+ifeq ($(UNAME), Darwin)
+	$(call mv_list,$(TARGET).dylib,$(PREFIX)/lib/lib$(TARGET).dylib)
+endif
 
 .PHONY: install_dir
 install_dir:
